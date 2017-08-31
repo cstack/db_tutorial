@@ -1,4 +1,4 @@
 <table class="image">
 <caption align="bottom">{{ include.description }}</caption>
-<tr><td><img src="{% unless site.github.environment == 'development'> %}{{ site.github.project_title }}{% endunless %}{{ site.baseurl }}/{{ include.url }}" alt="{{ include.description }}"/></td></tr>
+<tr><td><img src="{{ site.baseurl }}/{{ include.url }}" alt="{{ include.description }}"/></td></tr>
 </table>

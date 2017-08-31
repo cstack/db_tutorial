@@ -1,7 +1,10 @@
-npm install -g diff2html-cli --registry https://registry.npmjs.org
+# Let's Build a Simple Database
 
-diff2html
+[View rendered tutorial](https://cstack.github.io/db_tutorial/) (with more details on what this is.)
 
-diff2html -s line -f html -d word -i command -o preview -- -M HEAD~1
+## Notes to myself
 
+Run site locally:
+```
 bundle exec jekyll serve
+```

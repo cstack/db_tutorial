@@ -14,4 +14,4 @@ I'm building a clone of [sqlite](https://www.sqlite.org/arch.html) from scratch 
 # Table of Contents
 [Part 1 - Introduction and Setting up the REPL](part1.md)
 
-{% include image.html url="/assets/images/arch2.gif" description="sqlite architecture (https://www.sqlite.org/arch.html)" %}
+{% include image.html url="assets/images/arch2.gif" description="sqlite architecture (https://www.sqlite.org/arch.html)" %}

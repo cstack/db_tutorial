@@ -17,7 +17,7 @@ To figure things out, I started writing a database from scratch. It's modeled of
 
 There's lots of documentation of [sqlite internals on their website](https://www.sqlite.org/arch.html), plus I've got a copy of [SQLite Database System: Design and Implementation](https://play.google.com/store/books/details?id=9Z6IQQnX1JEC).
 
-{% include image.html url="/assets/images/arch1.gif" description="sqlite architecture (https://www.sqlite.org/zipvfs/doc/trunk/www/howitworks.wiki)" %}
+{% include image.html url="assets/images/arch1.gif" description="sqlite architecture (https://www.sqlite.org/zipvfs/doc/trunk/www/howitworks.wiki)" %}
 
 A query goes through a chain of components in order to retrieve or modify data. The _front-end_ consists of the:
 - tokenizer

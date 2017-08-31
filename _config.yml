@@ -1,1 +1,3 @@
 theme: jekyll-theme-minimal
+title: Let's Build a Simiple Database
+description: Writing a sqlite clone from scratch in C

@@ -153,7 +153,7 @@ db > .exit
 ~
 ```
 
-Alright, we've got a working REPL. In the next part we'll try creating and retrieving records in-memory. Meanwhile, here's the entire program from this part:
+Alright, we've got a working REPL. In the [next part](/part2) we'll start developing our command language. Meanwhile, here's the entire program from this part:
 
 ```c
 #include <stdbool.h>

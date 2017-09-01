@@ -53,7 +53,7 @@ Non-SQL statements like `.exit` are called "meta-commands". They all start with 
 
 Next, we add a step that converts the line of input into our internal representation of a statement. This is our hacky version of the sqlite front-end.
 
-Lastly, we pass the prepared statement to `execute_statement`. This will eventually become our virtual machine.
+Lastly, we pass the prepared statement to `execute_statement`. This function will eventually become our virtual machine.
 
 Notice that two of our new functions return enums indicating success or failure:
 

@@ -5,7 +5,7 @@
 - How does rolling back a transaction work?
 - How are indexes formatted?
 - When and how does a full table scan happen?
-- What format is a prepared statement save in?
+- What format is a prepared statement saved in?
 
 In short, how does a database **work**?
 

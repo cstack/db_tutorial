@@ -1,4 +1,6 @@
-# Part 1 - Introduction and Setting up the REPL
+---
+title: Part 1 - Introduction and Setting up the REPL
+---
 
 As a web developer, I use relational databases every day at my job, but they're a black box to me. Some questions I have:
 - What format is data saved in? (in memory and on disk)

@@ -1,4 +1,6 @@
-# Part 3 - An In-Memory, Append-Only, Single-Table Database
+---
+title: Part 3 - An In-Memory, Append-Only, Single-Table Database
+---
 
 We're going to start small by putting a lot of limitations on our database. For now, it will:
 

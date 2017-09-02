@@ -38,7 +38,38 @@
       </header>
       <section>
 
+      {% for part in site.parts %}
+          {% if part.url == page.url %}
+              {% assign is_part = true %}
+              {% assign part_index0 = forloop.index0 %}
+              {% assign part_index1 = forloop.index %}
+          {% endif %}
+      {% endfor %}
+      {% for part in site.parts %}
+          {% if part_index0 == forloop.index %}
+              {% assign prev_part = part %}
+          {% endif %}
+          {% if part_index1 == forloop.index0 %}
+              {% assign next_part = part %}
+          {% endif %}
+      {% endfor %}
+
+      <h1>{{ page.title }}</h1>
+      {% if prev_part %}
+          <p><a class="prev" href="{{ prev_part.url }}">{{prev_part.title}}</a> <br></p>
+      {% endif %}
+      {% if next_part %}
+          <p><a class="next" href="{{ next_part.url }}">{{next_part.title}}</a> <br></p>
+      {% endif %}
+
       {{ content }}
+
+      {% if prev_part %}
+          <p><a class="prev" href="{{ prev_part.url }}">{{prev_part.title}}</a> <br></p>
+      {% endif %}
+      {% if next_part %}
+          <p><a class="next" href="{{ next_part.url }}">{{next_part.title}}</a> <br></p>
+      {% endif %}
 
       </section>
       <footer>

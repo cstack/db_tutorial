@@ -14,3 +14,19 @@ table.image td {
 body {
   color: #323232;
 }
+
+a.prev {
+  float: left;
+}
+
+a.prev:before {
+  content: "< "
+}
+
+a.next {
+  float: right;
+}
+
+a.next:after {
+  content: " >"
+}

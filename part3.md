@@ -59,13 +59,15 @@ We store those parsed arguments into a new `Row` data structure inside the state
 
 Now we need to copy that data into some data structure representing the table. SQLite uses a B-tree for fast lookups, inserts and deletes. We'll start with something simpler. Like a B-tree, it will group rows into pages, but instead of arranging those pages as a tree it will arrange them as an array.
 
+Here's my plan:
+
 - Store rows in blocks of memory called pages
 - Each page stores as many rows as it can fit
 - Rows are serialized into a compact representation with each page
 - Pages are only allocated as needed
 - Keep a fixed-size array of pointers to pages
 
-First, the code to convert rows to and from their compact representation:
+First we'll define the compact representation of a row:
 ```diff
 +#define size_of_attribute(Struct, Attribute) sizeof(((Struct*)0)->Attribute)
 +
@@ -77,6 +79,17 @@ First, the code to convert rows to and from their compact representation:
 +const uint32_t EMAIL_OFFSET = USERNAME_OFFSET + USERNAME_SIZE;
 +const uint32_t ROW_SIZE = ID_SIZE + USERNAME_SIZE + EMAIL_SIZE;
 ```
+
+This means the layout of a serialized row will look like this:
+
+| column   | size (bytes) | offset       |
+|----------|--------------|--------------|
+| id       | 4            | 0            |
+| username | 32           | 4            |
+| email    | 255          | 36           |
+| total    | 291          |              |
+
+We also need code to convert to and from the compact representation.
 ```diff
 +void serialize_row(Row* source, void* destination) {
 +  memcpy(destination + ID_OFFSET, &(source->id), ID_SIZE);
@@ -91,16 +104,7 @@ First, the code to convert rows to and from their compact representation:
 +}
 ```
 
-This means the layout of a serialized row will look like this:
-
-| column   | size (bytes) | offset       |
-|----------|--------------|--------------|
-| id       | 4            | 0            |
-| username | 32           | 4            |
-| email    | 255          | 36           |
-| total    | 291          |              |
-
-Next, a Table structure that points to pages of rows and keeps track of how many rows there are:
+Next, a `Table` structure that points to pages of rows and keeps track of how many rows there are:
 ```diff
 +const uint32_t PAGE_SIZE = 4096;
 +const uint32_t TABLE_MAX_PAGES = 100;
@@ -114,9 +118,9 @@ Next, a Table structure that points to pages of rows and keeps track of how many
 +typedef struct Table_t Table;
 ```
 
-I'm making a page 4 kilobytes because that's the default page size on most computer architectures. This means one page in our database corresponds to one page used by the operating system. The operating system will move pages in and out of memory as whole units instead of breaking them up.
+I'm making our page size 4 kilobytes because it's the same size as a page used in the virtual memory systems of most computer architectures. This means one page in our database corresponds to one page used by the operating system. The operating system will move pages in and out of memory as whole units instead of breaking them up.
 
-I'm setting an arbitrary limit of 100 pages that we will allocate. When we switch to a tree structure, our database won't have a maximum size. (Although we'll still limit how many pages we keep in memory at once)
+I'm setting an arbitrary limit of 100 pages that we will allocate. When we switch to a tree structure, our database's maximum size will only be limited by the maximum size of a file. (Although we'll still limit how many pages we keep in memory at once)
 
 Rows should not cross page boundaries. Since pages probably won't exist next to each other in memory, this assumption makes it easier to read/write rows.
 

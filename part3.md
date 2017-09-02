@@ -57,21 +57,21 @@ We store those parsed arguments into a new `Row` data structure inside the state
  typedef struct Statement_t Statement;
 ```
 
-Now we need to copy that data into some data structure representing the table. SQLite uses a B-tree for fast lookups, inserts and deletes. But we'll start with something simpler: an array.
-
-There's no way for the database to know up-front how much space it needs, so we'll need to dynamically allocate memory. But allocating separate memory for each row would result in a lot of overhead storing pointers from one node to the next. It would also make saving the data structure to a file harder. Here's my alternative:
+Now we need to copy that data into some data structure representing the table. SQLite uses a B-tree for fast lookups, inserts and deletes. We'll start with something simpler. Like a B-tree, it will group rows into pages, but instead of arranging those pages as a tree it will arrange them as an array.
 
 - Store rows in blocks of memory called pages
 - Each page stores as many rows as it can fit
 - Rows are serialized into a compact representation with each page
 - Pages are only allocated as needed
-- Keep a fixed-size array of pointers to pages so a row at index `i` can be found in constant time
+- Keep a fixed-size array of pointers to pages
 
 First, the code to convert rows to and from their compact representation:
 ```diff
-+const uint32_t ID_SIZE = sizeof(((Row*)0)->id);
-+const uint32_t USERNAME_SIZE = sizeof(((Row*)0)->username);
-+const uint32_t EMAIL_SIZE = sizeof(((Row*)0)->email);
++#define size_of_attribute(Struct, Attribute) sizeof(((Struct*)0)->Attribute)
++
++const uint32_t ID_SIZE = size_of_attribute(Row, id);
++const uint32_t USERNAME_SIZE = size_of_attribute(Row, username);
++const uint32_t EMAIL_SIZE = size_of_attribute(Row, email);
 +const uint32_t ID_OFFSET = 0;
 +const uint32_t USERNAME_OFFSET = ID_OFFSET + ID_SIZE;
 +const uint32_t EMAIL_OFFSET = USERNAME_OFFSET + USERNAME_SIZE;
@@ -91,6 +91,15 @@ First, the code to convert rows to and from their compact representation:
 +}
 ```
 
+This means the layout of a serialized row will look like this:
+
+| column   | size (bytes) | offset       |
+|----------|--------------|--------------|
+| id       | 4            | 0            |
+| username | 32           | 4            |
+| email    | 255          | 36           |
+| total    | 291          |              |
+
 Next, a Table structure that points to pages of rows and keeps track of how many rows there are:
 ```diff
 +const uint32_t PAGE_SIZE = 4096;
@@ -105,7 +114,13 @@ Next, a Table structure that points to pages of rows and keeps track of how many
 +typedef struct Table_t Table;
 ```
 
-And a way to find where in memory a particular row should go:
+I'm making a page 4 kilobytes because that's the default page size on most computer architectures. This means one page in our database corresponds to one page used by the operating system. The operating system will move pages in and out of memory as whole units instead of breaking them up.
+
+I'm setting an arbitrary limit of 100 pages that we will allocate. When we switch to a tree structure, our database won't have a maximum size. (Although we'll still limit how many pages we keep in memory at once)
+
+Rows should not cross page boundaries. Since pages probably won't exist next to each other in memory, this assumption makes it easier to read/write rows.
+
+Speaking of which, here is how we figure out where to read/write in memory for a particular row:
 ```diff
 +void* row_slot(Table* table, uint32_t row_num) {
 +  uint32_t page_num = row_num / ROWS_PER_PAGE;

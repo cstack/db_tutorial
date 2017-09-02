@@ -1,5 +1,5 @@
 theme: jekyll-theme-minimal
-title: Let's Build a Simiple Database
+title: Let's Build a Simple Database
 description: Writing a sqlite clone from scratch in C
 google_analytics: UA-105767942-1
 collections:

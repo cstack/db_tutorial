@@ -148,7 +148,7 @@ db > .exit
 ~
 ```
 
-The skeleton of our database is taking shape... wouldn't it be nice if it stored data? In [Part 3](part3) we'll implement `insert` and `select`, creating the world's worst data store. In the mean time, here's the entire diff from this part:
+The skeleton of our database is taking shape... wouldn't it be nice if it stored data? In the next part, we'll implement `insert` and `select`, creating the world's worst data store. In the mean time, here's the entire diff from this part:
 
 ```diff
 @@ -10,6 +10,23 @@ struct InputBuffer_t {

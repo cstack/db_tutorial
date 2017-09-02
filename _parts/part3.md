@@ -244,7 +244,7 @@ Now would be a great time to write some tests, for a couple reasons:
 - We're planning to dramatically change the data structure storing our table, and tests would catch regressions.
 - There are a couple edge cases we haven't tested manually (e.g. filling up the table)
 
-We'll address those issues in Part 4. For now, here's the complete diff from this part:
+We'll address those issues in the next part. For now, here's the complete diff from this part:
 ```diff
  typedef struct InputBuffer_t InputBuffer;
  

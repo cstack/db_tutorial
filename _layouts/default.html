@@ -56,19 +56,19 @@
 
       <h1>{{ page.title }}</h1>
       {% if prev_part %}
-          <p><a class="prev" href="{{ prev_part.url }}">{{prev_part.title}}</a> <br></p>
+          <p><a class="prev" href="{{site.baseurl}}{{ prev_part.url }}">{{prev_part.title}}</a> <br></p>
       {% endif %}
       {% if next_part %}
-          <p><a class="next" href="{{ next_part.url }}">{{next_part.title}}</a> <br></p>
+          <p><a class="next" href="{{site.baseurl}}{{ next_part.url }}">{{next_part.title}}</a> <br></p>
       {% endif %}
 
       {{ content }}
 
       {% if prev_part %}
-          <p><a class="prev" href="{{ prev_part.url }}">{{prev_part.title}}</a> <br></p>
+          <p><a class="prev" href="{{site.baseurl}}{{ prev_part.url }}">{{prev_part.title}}</a> <br></p>
       {% endif %}
       {% if next_part %}
-          <p><a class="next" href="{{ next_part.url }}">{{next_part.title}}</a> <br></p>
+          <p><a class="next" href="{{site.baseurl}}{{ next_part.url }}">{{next_part.title}}</a> <br></p>
       {% endif %}
 
       </section>

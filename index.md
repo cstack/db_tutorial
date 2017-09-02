@@ -15,7 +15,7 @@ In short, how does a database **work**?
 I'm building a clone of [sqlite](https://www.sqlite.org/arch.html) from scratch in C in order to understand, and I'm going to document my process as I go.
 
 # Table of Contents
-{% for part in site.parts %}- [{{part.title}}]({{part.url}})
+{% for part in site.parts %}- [{{part.title}}]({{site.baseurl}}{{part.url}})
 {% endfor %}
 
 {% include image.html url="assets/images/arch2.gif" description="sqlite architecture (https://www.sqlite.org/arch.html)" %}

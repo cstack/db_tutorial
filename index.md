@@ -14,5 +14,6 @@ I'm building a clone of [sqlite](https://www.sqlite.org/arch.html) from scratch 
 # Table of Contents
 - [Part 1 - Introduction and Setting up the REPL](part1)
 - [Part 2 - World's Simplest SQL Compiler and Virtual Machine](part2)
+- [Part 3 - An In-Memory, Append-Only, Single-Table Database](part3)
 
 {% include image.html url="assets/images/arch2.gif" description="sqlite architecture (https://www.sqlite.org/arch.html)" %}

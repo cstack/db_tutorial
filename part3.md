@@ -240,8 +240,6 @@ Now would be a great time to write some tests, for a couple reasons:
 
 We'll address those issues in Part 4. For now, here's the complete diff from this part:
 ```diff
-@@ -10,23 +10,94 @@ struct InputBuffer_t {
- };
  typedef struct InputBuffer_t InputBuffer;
  
 +enum ExecuteResult_t { EXECUTE_SUCCESS, EXECUTE_TABLE_FULL };
@@ -279,9 +277,11 @@ We'll address those issues in Part 4. For now, here's the complete diff from thi
  };
  typedef struct Statement_t Statement;
  
-+const uint32_t ID_SIZE = sizeof(((Row*)0)->id);
-+const uint32_t USERNAME_SIZE = sizeof(((Row*)0)->username);
-+const uint32_t EMAIL_SIZE = sizeof(((Row*)0)->email);
++#define size_of_attribute(Struct, Attribute) sizeof(((Struct*)0)->Attribute)
++
++const uint32_t ID_SIZE = size_of_attribute(Row, id);
++const uint32_t USERNAME_SIZE = size_of_attribute(Row, username);
++const uint32_t EMAIL_SIZE = size_of_attribute(Row, email);
 +const uint32_t ID_OFFSET = 0;
 +const uint32_t USERNAME_OFFSET = ID_OFFSET + ID_SIZE;
 +const uint32_t EMAIL_OFFSET = USERNAME_OFFSET + USERNAME_SIZE;
@@ -336,7 +336,7 @@ We'll address those issues in Part 4. For now, here's the complete diff from thi
  InputBuffer* new_input_buffer() {
    InputBuffer* input_buffer = malloc(sizeof(InputBuffer));
    input_buffer->buffer = NULL;
-@@ -64,6 +135,12 @@ PrepareResult prepare_statement(InputBuffer* input_buffer,
+@@ -64,6 +137,12 @@ PrepareResult prepare_statement(InputBuffer* input_buffer,
                                  Statement* statement) {
    if (strncmp(input_buffer->buffer, "insert", 6) == 0) {
      statement->type = STATEMENT_INSERT;
@@ -349,7 +349,7 @@ We'll address those issues in Part 4. For now, here's the complete diff from thi
      return PREPARE_SUCCESS;
    }
    if (strcmp(input_buffer->buffer, "select") == 0) {
-@@ -74,18 +151,39 @@ PrepareResult prepare_statement(InputBuffer* input_buffer,
+@@ -74,18 +153,39 @@ PrepareResult prepare_statement(InputBuffer* input_buffer,
    return PREPARE_UNRECOGNIZED_STATEMENT;
  }
  
@@ -394,7 +394,7 @@ We'll address those issues in Part 4. For now, here's the complete diff from thi
    InputBuffer* input_buffer = new_input_buffer();
    while (true) {
      print_prompt();
-@@ -105,13 +203,22 @@ int main(int argc, char* argv[]) {
+@@ -105,13 +205,22 @@ int main(int argc, char* argv[]) {
      switch (prepare_statement(input_buffer, &statement)) {
        case (PREPARE_SUCCESS):
          break;

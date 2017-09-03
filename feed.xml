@@ -13,8 +13,8 @@ layout: none
         <title>{{ part.title | xml_escape }}</title>
         <description>{{ part.content | xml_escape }}</description>
         <pubDate>{{ part.date | date: "%a, %d %b %Y %H:%M:%S %z" }}</pubDate>
-        <link>{{ site.url }}/{{ part.url }}</link>
-        <guid isPermaLink="true">{{ site.url }}/{{ part.url }}</guid>
+        <link>{{site.url}}{{site.baseurl}}{{part.url}}</link>
+        <guid isPermaLink="true">{{site.url}}{{site.baseurl}}{{part.url}}</guid>
       </item>
     {% endfor %}
   </channel>

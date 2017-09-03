@@ -4,9 +4,9 @@ title: Part 4 - Our First Tests (and Bugs)
 
 We've got the ability to insert rows into our database and to print out all rows. Let's take a moment to test what we've got so far.
 
-I'm going to use [rspec](http://rspec.info/) to write my tests because I'm familiar with it.
+I'm going to use [rspec](http://rspec.info/) to write my tests because I'm familiar with it, and the syntax is fairly readable.
 
-I'll make a short helper to send a list of commands to our database program, then make assertions about the output:
+I'll define a short helper to send a list of commands to our database program then make assertions about the output:
 
 ```ruby
 describe 'database' do
@@ -158,7 +158,7 @@ it 'prints error message if strings are too long' do
 end
 ```
 
-In order to do this we need to upgrade our parser. As a reminder, we're currently using [scanf()](https://linux.die.net/man/3/scanf)
+In order to do this we need to upgrade our parser. As a reminder, we're currently using [scanf()](https://linux.die.net/man/3/scanf):
 ```c
 if (strncmp(input_buffer->buffer, "insert", 6) == 0) {
   statement->type = STATEMENT_INSERT;

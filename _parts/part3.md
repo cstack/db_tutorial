@@ -213,7 +213,7 @@ Lastly, we need to initialize the table and handle a few more error cases:
 -    execute_statement(&statement);
 -    printf("Executed.\n");
 +    switch (execute_statement(&statement, table)) {
-+      case (PREPARE_SUCCESS):
++      case (EXECUTE_SUCCESS):
 +        printf("Executed.\n");
 +        break;
 +      case (EXECUTE_TABLE_FULL):
@@ -417,7 +417,7 @@ We'll address those issues in the next part. For now, here's the complete diff f
 -    execute_statement(&statement);
 -    printf("Executed.\n");
 +    switch (execute_statement(&statement, table)) {
-+      case (PREPARE_SUCCESS):
++      case (EXECUTE_SUCCESS):
 +        printf("Executed.\n");
 +        break;
 +      case (EXECUTE_TABLE_FULL):

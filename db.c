@@ -215,7 +215,7 @@ int main(int argc, char* argv[]) {
     }
 
     switch (execute_statement(&statement, table)) {
-      case (PREPARE_SUCCESS):
+      case (EXECUTE_SUCCESS):
         printf("Executed.\n");
         break;
       case (EXECUTE_TABLE_FULL):

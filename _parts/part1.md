@@ -1,5 +1,6 @@
 ---
 title: Part 1 - Introduction and Setting up the REPL
+date: 2017-08-30
 ---
 
 As a web developer, I use relational databases every day at my job, but they're a black box to me. Some questions I have:

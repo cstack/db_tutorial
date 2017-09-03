@@ -1,5 +1,6 @@
 ---
 title: Part 2 - World's Simplest SQL Compiler and Virtual Machine
+date: 2017-08-31
 ---
 
 We're making a clone of sqlite. The "front-end" of sqlite is a SQL compiler that parses a string and outputs an internal representation called bytecode.

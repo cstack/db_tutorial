@@ -1,5 +1,6 @@
 ---
 title: Part 3 - An In-Memory, Append-Only, Single-Table Database
+date: 2017-09-01
 ---
 
 We're going to start small by putting a lot of limitations on our database. For now, it will:

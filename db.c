@@ -148,7 +148,7 @@ PrepareResult prepare_insert(InputBuffer* input_buffer, Statement* statement) {
   }
 
   int id = atoi(id_string);
-  if (id < 0) {
+  if (id < 0 || TABLE_MAX_PAGES <= id) {
     return PREPARE_NEGATIVE_ID;
   }
   if (strlen(username) > COLUMN_USERNAME_SIZE) {

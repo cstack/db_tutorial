@@ -109,7 +109,7 @@ To read a line of input, use [getline()](http://man7.org/linux/man-pages/man3/ge
 ```c
 ssize_t getline(char **lineptr, size_t *n, FILE *stream);
 ```
-`linepter` : a pointer to the variable we use to point to the buffer containing the read line.
+`lineptr` : a pointer to the variable we use to point to the buffer containing the read line.
 
 `n` : a pointer to the variable we use to save the size of allocated buffer.
 

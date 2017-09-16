@@ -75,7 +75,7 @@ I'm renaming `new_table()` to `db_open()` because it now has the effect of openi
  }
 ```
 
-`db_open()` in turn calls `paper_open()`, which opens the database file and keeps track of its size. It also initializes the page cache to all `NULL`s.
+`db_open()` in turn calls `pager_open()`, which opens the database file and keeps track of its size. It also initializes the page cache to all `NULL`s.
 
 ```diff
 +Pager* pager_open(const char* filename) {

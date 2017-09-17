@@ -122,7 +122,7 @@ Following our new abstraction, we move the logic for fetching a page into its ow
  }
 ```
 
-The `get_page()` method has the logic for handling a cache miss. We assume pages are saved one after the other in the database file: Page 0 at offset 0, page 1 at offset 4046, page 2 at offset 8092, etc. If the requested page lies outside the bounds of the file, we know it should be blank, so we just allocate some memory return it. The page will be added to the file when we flush the cache to disk later.
+The `get_page()` method has the logic for handling a cache miss. We assume pages are saved one after the other in the database file: Page 0 at offset 0, page 1 at offset 4096, page 2 at offset 8192, etc. If the requested page lies outside the bounds of the file, we know it should be blank, so we just allocate some memory return it. The page will be added to the file when we flush the cache to disk later.
 
 
 ```diff

@@ -18,4 +18,6 @@ I'm building a clone of [sqlite](https://www.sqlite.org/arch.html) from scratch 
 {% for part in site.parts %}- [{{part.title}}]({{site.baseurl}}{{part.url}})
 {% endfor %}
 
+> "What I cannot create, I do not understand." -- [Richard Feynman](https://en.m.wikiquote.org/wiki/Richard_Feynman)
+
 {% include image.html url="assets/images/arch2.gif" description="sqlite architecture (https://www.sqlite.org/arch.html)" %}

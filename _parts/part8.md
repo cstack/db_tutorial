@@ -1,13 +1,13 @@
 ---
 title: Part 8 - B-Tree Leaf Node Format
-date: 2017-09-24
+date: 2017-09-25
 ---
 
 We're changing the format of our table from an unsorted array of rows to a B-Tree. This is a pretty big change that is going to take multiple articles to implement. By the end of this article, we'll define the layout of a leaf node and support inserting key/value pairs into a single-node tree. But first, let's recap the reasons for switching to a tree structure.
 
 ## Alternative Table Formats
 
-With the current format, each page stores only rows (no metadata) so it is pretty space efficient. Insertion is also fast because we just append it to the end. However, finding a particular row can only be done by scanning the entire table. And if we want to delete a row, we have to move every row that comes after it to fill in the hole.
+With the current format, each page stores only rows (no metadata) so it is pretty space efficient. Insertion is also fast because we just append to the end. However, finding a particular row can only be done by scanning the entire table. And if we want to delete a row, we have to to fill in the hole by movinvg every row that comes after it.
 
 If we stored the table as an array, but kept rows sorted by id, we could use binary search to find a particular id. However, insertion would have the same problem as deletion where we have to move a lot of rows to make space.
 
@@ -30,9 +30,9 @@ Leaf nodes and internal nodes have different layouts. Let's make an enum to keep
 +typedef enum NodeType_t NodeType;
 ```
 
-Each node will correspond to one page. Internal nodes will point to their children by storing the page number that stores the child. The btree receives pointers to pages by asking the pager for a particular page number.
+Each node will correspond to one page. Internal nodes will point to their children by storing the page number that stores the child. The btree asks the pager for a particular page number and gets back a pointer into the page cache. Pages are stored in the database file one after the other in order of page number.
 
-Nodes need to store some metadata in a header at the beginning of the page. Both types of nodes will store what type of node they are, whether or not they are the root node, and a pointer to their parent (to allow finding a node's siblings). I define constants for the size and offset of every header field:
+Nodes need to store some metadata in a header at the beginning of the page. Every node will store what type of node it is, whether or not it is the root node, and a pointer to its parent (to allow finding a node's siblings). I define constants for the size and offset of every header field:
 
 ```diff
 +/*
@@ -79,13 +79,13 @@ The body of a leaf node is an array of cells. Each cell is a key followed by a v
 +    LEAF_NODE_SPACE_FOR_CELLS / LEAF_NODE_CELL_SIZE;
 ```
 
-Based on these constants, here's what the layout of leaf node looks like currently:
+Based on these constants, here's what the layout of a leaf node looks like currently:
 
 {% include image.html url="assets/images/leaf-node-format.png" description="Our leaf node format" %}
 
-It's a little space inefficient to use an entire byte per boolean value in the header, but this makes it a little easier to write code to access those values.
+It's a little space inefficient to use an entire byte per boolean value in the header, but this makes it easier to write code to access those values.
 
-Also notice that there's some wasted space at the end. We store as many cells as we can after the header, but there is some space left over that can't hold an entire cell. We leave it empty to avoid splitting cells between nodes.
+Also notice that there's some wasted space at the end. We store as many cells as we can after the header, but the leftover space can't hold an entire cell. We leave it empty to avoid splitting cells between nodes.
 
 ## Accessing Leaf Node Fields
 
@@ -96,7 +96,7 @@ The code to access keys, values and metadata all involve pointer arithmetic usin
 +  return node + LEAF_NODE_NUM_CELLS_OFFSET;
 +}
 +
-+uint32_t* leaf_node_cell(void* node, uint32_t cell_num) {
++void* leaf_node_cell(void* node, uint32_t cell_num) {
 +  return node + LEAF_NODE_HEADER_SIZE + cell_num * LEAF_NODE_CELL_SIZE;
 +}
 +
@@ -167,7 +167,7 @@ Every node is going to take up exactly one page, even if it's not full. That mea
      printf("Error closing db file.\n");
 ```
 
-Now it makes more sense to store the number of pages in our database rather than the number of rows. The number of pages should be assoicated with the pager, object, not the table, since it's the number of pages used by the database, not a particular table.
+Now it makes more sense to store the number of pages in our database rather than the number of rows. The number of pages should be assoicated with the pager object, not the table, since it's the number of pages used by the database, not a particular table. A btree is identified by its root node page number, so the table object needs to keep track of that.
 
 ```diff
  const uint32_t PAGE_SIZE = 4096;
@@ -223,7 +223,7 @@ Now it makes more sense to store the number of pages in our database rather than
 
 ## Changes to the Cursor Object
 
-A cursor represents a position in the table. When our table was a simple array of rows, that could be represented by a row number. Now that it's a tree, we identify a position by the page number of the node, and the cell number within that node.
+A cursor represents a position in the table. When our table was a simple array of rows, we could access a row given just the row number. Now that it's a tree, we identify a position by the page number of the node, and the cell number within that node.
 
 ```diff
  struct Cursor_t {
@@ -355,9 +355,9 @@ Next we'll make a function for inserting a key/value pair into a leaf node. It w
 +
 ```
 
-We holding off on implementing splitting for now, so we error if the node is full. Next we shift cells once space to the right to make room for the new cell. Then we write the new key/value into the empty space.
+We haven't implemented splitting yet, so we error if the node is full. Next we shift cells one space to the right to make room for the new cell. Then we write the new key/value into the empty space.
 
-Since we're assuming the tree has only one node for now, our `execute_insert()` function simply needs to call this helper method:
+Since we assume the tree only has one node, our `execute_insert()` function simply needs to call this helper method:
 
 ```diff
  ExecuteResult execute_insert(Statement* statement, Table* table) {
@@ -386,7 +386,6 @@ How many rows can the leaf node hold?
 I'm adding a new meta command to print out a few constants of interest.
 
 ```diff
-+
 +void print_constants() {
 +  printf("ROW_SIZE: %d\n", ROW_SIZE);
 +  printf("COMMON_NODE_HEADER_SIZE: %d\n", COMMON_NODE_HEADER_SIZE);
@@ -440,8 +439,7 @@ To help with debugging and visualization, I'm also adding a meta command to prin
 ```diff
 +void print_leaf_node(void* node) {
 +  uint32_t num_cells = *leaf_node_num_cells(node);
-+  printf("leaf (size %d)", num_cells);
-+  printf("\n");
++  printf("leaf (size %d)\n", num_cells);
 +  for (uint32_t i = 0; i < num_cells; i++) {
 +    uint32_t key = *leaf_node_key(node, i);
 +    printf("  - %d : %d\n", i, key);
@@ -495,7 +493,7 @@ And a test
 
 Uh oh, we're still not storing rows in sorted order. You'll notice that `execute_insert()` inserts into the leaf node at the position returned by `table_end()`. So rows are stored in the order they were inserted, just like before.
 
-## Current Limitations
+## Next Time
 
 This all might seem like a step backwards. Our database now stores fewer rows than it did before, and we're still storing rows in unsorted order. But like I said at the beginning, this is a big change and it's important to break it up into manageable steps.
 
@@ -576,7 +574,7 @@ Next time, we'll implement finding a record by primary key, and start storing ro
 +  return node + LEAF_NODE_NUM_CELLS_OFFSET;
 +}
 +
-+uint32_t* leaf_node_cell(void* node, uint32_t cell_num) {
++void* leaf_node_cell(void* node, uint32_t cell_num) {
 +  return node + LEAF_NODE_HEADER_SIZE + cell_num * LEAF_NODE_CELL_SIZE;
 +}
 +
@@ -599,8 +597,7 @@ Next time, we'll implement finding a record by primary key, and start storing ro
 +
 +void print_leaf_node(void* node) {
 +  uint32_t num_cells = *leaf_node_num_cells(node);
-+  printf("leaf (size %d)", num_cells);
-+  printf("\n");
++  printf("leaf (size %d)\n", num_cells);
 +  for (uint32_t i = 0; i < num_cells; i++) {
 +    uint32_t key = *leaf_node_key(node, i);
 +    printf("  - %d : %d\n", i, key);
@@ -820,16 +817,10 @@ Next time, we'll implement finding a record by primary key, and start storing ro
 +  leaf_node_insert(cursor, row_to_insert->id, row_to_insert);
  
    free(cursor);
- 
-diff --git a/spec/main_spec.rb b/spec/main_spec.rb
-index bc0180a..43c9043 100644
---- a/spec/main_spec.rb
-+++ b/spec/main_spec.rb
-@@ -108,4 +108,44 @@ describe 'database' do
-       "db > ",
-     ])
-   end
-+
+```
+
+And the specs:
+```diff
 +  it 'allows printing out the structure of a one-node btree' do
 +    script = [3, 1, 2].map do |i|
 +      "insert #{i} user#{i} person#{i}@example.com"

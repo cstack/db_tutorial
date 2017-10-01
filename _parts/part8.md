@@ -7,7 +7,7 @@ We're changing the format of our table from an unsorted array of rows to a B-Tre
 
 ## Alternative Table Formats
 
-With the current format, each page stores only rows (no metadata) so it is pretty space efficient. Insertion is also fast because we just append to the end. However, finding a particular row can only be done by scanning the entire table. And if we want to delete a row, we have to to fill in the hole by movinvg every row that comes after it.
+With the current format, each page stores only rows (no metadata) so it is pretty space efficient. Insertion is also fast because we just append to the end. However, finding a particular row can only be done by scanning the entire table. And if we want to delete a row, we have to fill in the hole by moving every row that comes after it.
 
 If we stored the table as an array, but kept rows sorted by id, we could use binary search to find a particular id. However, insertion would have the same problem as deletion where we have to move a lot of rows to make space.
 
@@ -167,7 +167,7 @@ Every node is going to take up exactly one page, even if it's not full. That mea
      printf("Error closing db file.\n");
 ```
 
-Now it makes more sense to store the number of pages in our database rather than the number of rows. The number of pages should be assoicated with the pager object, not the table, since it's the number of pages used by the database, not a particular table. A btree is identified by its root node page number, so the table object needs to keep track of that.
+Now it makes more sense to store the number of pages in our database rather than the number of rows. The number of pages should be associated with the pager object, not the table, since it's the number of pages used by the database, not a particular table. A btree is identified by its root node page number, so the table object needs to keep track of that.
 
 ```diff
  const uint32_t PAGE_SIZE = 4096;
@@ -318,7 +318,7 @@ When we open the database for the first time, the database file will be empty, s
 -  table->num_rows = num_rows;
 +
 +  if (pager->num_pages == 0) {
-+    // New database file. Initialze page 0 as leaf node.
++    // New database file. Initialize page 0 as leaf node.
 +    void* root_node = get_page(pager, 0);
 +    initialize_leaf_node(root_node);
 +  }
@@ -703,7 +703,7 @@ Next time, we'll implement finding a record by primary key, and start storing ro
 -  table->num_rows = num_rows;
 +
 +  if (pager->num_pages == 0) {
-+    // New database file. Initialze page 0 as leaf node.
++    // New database file. Initialize page 0 as leaf node.
 +    void* root_node = get_page(pager, 0);
 +    initialize_leaf_node(root_node);
 +  }

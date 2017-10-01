@@ -289,7 +289,7 @@ Table* db_open(const char* filename) {
   table->pager = pager;
 
   if (pager->num_pages == 0) {
-    // New database file. Initialze page 0 as leaf node.
+    // New database file. Initialize page 0 as leaf node.
     void* root_node = get_page(pager, 0);
     initialize_leaf_node(root_node);
   }

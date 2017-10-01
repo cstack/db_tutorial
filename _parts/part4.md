@@ -299,7 +299,7 @@ end
          continue;
 ```
 
-Alright, that's enough testing for now. Next is a very important feature: persistance! We're going to save our database to a file and read it back out again.
+Alright, that's enough testing for now. Next is a very important feature: persistence! We're going to save our database to a file and read it back out again.
 
 It's gonna be great.
 

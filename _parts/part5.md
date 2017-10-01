@@ -31,7 +31,7 @@ end
 
 Like sqlite, we're going to persist records by saving the entire database to a file.
 
-We already set ourselves up to do that by serializing rows into page-sized memory blocks. To add persistance, we can simply write those blocks of memory to a file, and read them back into memory the next time the program starts up.
+We already set ourselves up to do that by serializing rows into page-sized memory blocks. To add persistence, we can simply write those blocks of memory to a file, and read them back into memory the next time the program starts up.
 
 To make this easier, we're going to make an abstraction called the pager. We ask the pager for page number `x`, and the pager gives us back a block of memory. It first looks in its cache. On a cache miss, it copies data from disk into memory (by reading the database file).
 
@@ -255,7 +255,7 @@ Lastly, we need to accept the filename as a command-line argument:
 +  Table* table = db_open(filename);
 +
 ```
-With these changes, we're able to close then reopen the database, and our records are stil there!
+With these changes, we're able to close then reopen the database, and our records are still there!
 
 ```
 ~ ./db mydb.db
@@ -274,7 +274,7 @@ db > .exit
 ~
 ```
 
-For extra fun, let's take a look at `mydb.db` to see how our data is being stored. I'll use vim as a hex editior to look at the memory layout of the file:
+For extra fun, let's take a look at `mydb.db` to see how our data is being stored. I'll use vim as a hex editor to look at the memory layout of the file:
 
 ```
 vim mydb.db
@@ -282,15 +282,15 @@ vim mydb.db
 ```
 {% include image.html url="assets/images/file-format.png" description="Current File Format" %}
 
-The first four bytes are the id of the first row (4 bytes because we store a uint32_t). It's stored in little-endian byte order, so the least signifigant byte comes first (01), followed by the higher-order bytes (00 00 00). We used `memcpy()` to copy bytes from our `Row` struct into the page cache, so that means the struct was laid out in memory in little-endian byte order. That's an attribute of the machine I compiled the program for. If we wanted to write a database file on my machine, then read it on a big-endian machine, we'd have to change our `serialize_row()` and `deserialize_row()` methods to always store and read bytes in the same order.
+The first four bytes are the id of the first row (4 bytes because we store a uint32_t). It's stored in little-endian byte order, so the least significant byte comes first (01), followed by the higher-order bytes (00 00 00). We used `memcpy()` to copy bytes from our `Row` struct into the page cache, so that means the struct was laid out in memory in little-endian byte order. That's an attribute of the machine I compiled the program for. If we wanted to write a database file on my machine, then read it on a big-endian machine, we'd have to change our `serialize_row()` and `deserialize_row()` methods to always store and read bytes in the same order.
 
-The next 33 bytes store the username as a null-terminated string. Apparently "cstack" in ASCII hexidecimal is `63 73 74 61 63 6b`, followed by a null character (`00`). The rest of the 33 bytes are unused.
+The next 33 bytes store the username as a null-terminated string. Apparently "cstack" in ASCII hexadecimal is `63 73 74 61 63 6b`, followed by a null character (`00`). The rest of the 33 bytes are unused.
 
 The next 256 bytes store the email in the same way. Here we can see some random junk after the terminating null character. This is most likely due to uninitialized memory in our `Row` struct. We copy the entire 256-byte email buffer into the file, including any bytes after the end of the string. Whatever was in memory when we allocated that struct is still there. But since we use a terminating null character, it has no effect on behavior.
 
 ## Conclusion
 
-Alright! We've got persistence. It's not the greatest. For example if you kill the program without typing `.exit`, you lose your changes. Additionallly, we're writing all pages back to disk, even pages that haven't changed since we read them from disk. These are issues we can address later. The next thing I think we should work on is implementing the B-tree.
+Alright! We've got persistence. It's not the greatest. For example if you kill the program without typing `.exit`, you lose your changes. Additionally, we're writing all pages back to disk, even pages that haven't changed since we read them from disk. These are issues we can address later. The next thing I think we should work on is implementing the B-tree.
 
 Until then!
 

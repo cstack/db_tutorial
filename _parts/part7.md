@@ -33,7 +33,7 @@ The picture from above is a B-Tree, which SQLite uses to store indexes. To store
 | Number of children per node   | Less           | More                |
 | Internal nodes vs. leaf nodes | Same structure | Different structure |
 
-Until we get to implementing indexes, I'm going to talk soley about B+ trees, but I'll just refer to it as a B-tree or a btree.
+Until we get to implementing indexes, I'm going to talk solely about B+ trees, but I'll just refer to it as a B-tree or a btree.
 
 Nodes with children are called "internal" nodes. Internal nodes and leaf nodes are structured differently:
 

@@ -6,7 +6,7 @@ date: 2017-09-01
 We're going to start small by putting a lot of limitations on our database. For now, it will:
 
 - support two operations: inserting a row and printing all rows
-- reside only in memory (no persistance to disk)
+- reside only in memory (no persistence to disk)
 - support a single, hard-coded table
 
 Our hard-coded table is going to store users and look like this:

@@ -111,13 +111,13 @@ Since we're now checking node type, we need functions to get and set that value 
 
 ```diff
 +NodeType get_node_type(void* node) {
-+  uint8_t value = *((uint8_t*)node);
++  uint8_t value = *((uint8_t*)(node + NODE_TYPE_OFFSET));
 +  return (NodeType)value;
 +}
 +
 +void set_node_type(void* node, NodeType type) {
 +  uint8_t value = type;
-+  *((uint8_t*)node) = value;
++  *((uint8_t*)(node + NODE_TYPE_OFFSET)) = value;
 +}
 ```
 

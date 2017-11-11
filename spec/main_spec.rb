@@ -198,12 +198,40 @@ describe 'database' do
     expect(result).to eq([
       "db > Constants:",
       "ROW_SIZE: 293",
-      "COMMON_NODE_HEADER_SIZE: 6",
+      "COMMON_NODE_HEADER_SIZE: 2",
       "LEAF_NODE_HEADER_SIZE: 10",
       "LEAF_NODE_CELL_SIZE: 297",
       "LEAF_NODE_SPACE_FOR_CELLS: 4086",
       "LEAF_NODE_MAX_CELLS: 13",
       "db > ",
+    ])
+  end
+
+  it 'prints all rows in a multi-level tree' do
+    script = []
+    (1..15).each do |i|
+      script << "insert #{i} user#{i} person#{i}@example.com"
+    end
+    script << "select"
+    script << ".exit"
+    result = run_script(script)
+    expect(result[15...result.length]).to eq([
+      "db > (1, user1, person1@example.com)",
+      "(2, user2, person2@example.com)",
+      "(3, user3, person3@example.com)",
+      "(4, user4, person4@example.com)",
+      "(5, user5, person5@example.com)",
+      "(6, user6, person6@example.com)",
+      "(7, user7, person7@example.com)",
+      "(8, user8, person8@example.com)",
+      "(9, user9, person9@example.com)",
+      "(10, user10, person10@example.com)",
+      "(11, user11, person11@example.com)",
+      "(12, user12, person12@example.com)",
+      "(13, user13, person13@example.com)",
+      "(14, user14, person14@example.com)",
+      "(15, user15, person15@example.com)",
+      "Executed.", "db > ",
     ])
   end
 end

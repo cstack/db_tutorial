@@ -8,7 +8,9 @@ layout: none
     <description>{{ site.description | xml_escape }}</description>
     <link>{{site.url}}{{site.baseurl}}</link>
     <atom:link href="{{site.url}}{{site.baseurl}}/feed.xml" rel="self" type="application/rss+xml" />
-    {% for part in site.parts limit:10 %}
+    {% assign limit = 10 %}
+    {% assign offset = (site.parts.size | minus: limit) %}
+    {% for part in site.parts offset:offset limit:limit %}
       <item>
         <title>{{ part.title | xml_escape }}</title>
         <description>{{ part.content | xml_escape }}</description>

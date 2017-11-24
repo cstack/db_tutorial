@@ -223,7 +223,7 @@ Notice our huge branching factor. Because each child pointer / key pair is so sm
 | 0                      | 511^0 = 1           | 4 KB                   |
 | 1                      | 511^1 = 512         | ~2 MB                   |
 | 2                      | 511^2 = 261,121     | ~1 GB                   |
-| 3                      | 511^2 = 133,432,831 | ~550 GB                 |
+| 3                      | 511^3 = 133,432,831 | ~550 GB                 |
 
 In actuality, we can't store a full 4 KB of data per leaf node due to the overhead of the header, keys, and wasted space. But we can search through something like 500 GB of data by loading only 4 pages from disk. This is why the B-Tree is a useful data structure for databases.
 

@@ -257,33 +257,6 @@ Executed.
 db >
 ```
 
-Whew! One bug after another, but we're making progress. Now that we've got the sibling pointer, I don't think we actually need a parent pointer. I added it preemptively, but we never actually used it.
-
-```diff
- const uint32_t NODE_TYPE_OFFSET = 0;
- const uint32_t IS_ROOT_SIZE = sizeof(uint8_t);
- const uint32_t IS_ROOT_OFFSET = NODE_TYPE_SIZE;
--const uint32_t PARENT_POINTER_SIZE = sizeof(uint32_t);
--const uint32_t PARENT_POINTER_OFFSET = IS_ROOT_OFFSET + IS_ROOT_SIZE;
- const uint8_t COMMON_NODE_HEADER_SIZE =
--    NODE_TYPE_SIZE + IS_ROOT_SIZE + PARENT_POINTER_SIZE;
-+    NODE_TYPE_SIZE + IS_ROOT_SIZE;
-```
-
-```diff
-     expect(result).to eq([
-       "db > Constants:",
-       "ROW_SIZE: 293",
--      "COMMON_NODE_HEADER_SIZE: 6",
--      "LEAF_NODE_HEADER_SIZE: 14",
-+      "COMMON_NODE_HEADER_SIZE: 2",
-+      "LEAF_NODE_HEADER_SIZE: 10",
-       "LEAF_NODE_CELL_SIZE: 297",
--      "LEAF_NODE_SPACE_FOR_CELLS: 4082",
-+      "LEAF_NODE_SPACE_FOR_CELLS: 4086",
-       "LEAF_NODE_MAX_CELLS: 13",
-       "db > ",
-     ])
-```
+Whew! One bug after another, but we're making progress.
 
 Until next time.

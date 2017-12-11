@@ -68,7 +68,7 @@ Next, copy every cell into its new location:
 
 ```diff
 +  /*
-+  All existing keys plus new key should should be divided
++  All existing keys plus new key should be divided
 +  evenly between old (left) and new (right) nodes.
 +  Starting from the right, move each key to correct position.
 +  */

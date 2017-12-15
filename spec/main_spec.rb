@@ -28,7 +28,7 @@ describe 'database' do
       "select",
       ".exit",
     ])
-    expect(result).to eq([
+    expect(result).to match_array([
       "db > Executed.",
       "db > (1, user1, person1@example.com)",
       "Executed.",
@@ -41,7 +41,7 @@ describe 'database' do
       "insert 1 user1 person1@example.com",
       ".exit",
     ])
-    expect(result1).to eq([
+    expect(result1).to match_array([
       "db > Executed.",
       "db > ",
     ])
@@ -50,7 +50,7 @@ describe 'database' do
       "select",
       ".exit",
     ])
-    expect(result2).to eq([
+    expect(result2).to match_array([
       "db > (1, user1, person1@example.com)",
       "Executed.",
       "db > ",
@@ -63,7 +63,7 @@ describe 'database' do
     end
     script << ".exit"
     result = run_script(script)
-    expect(result.last(2)).to eq([
+    expect(result.last(2)).to match_array([
       "db > Executed.",
       "db > Need to implement splitting internal node",
     ])
@@ -78,7 +78,7 @@ describe 'database' do
       ".exit",
     ]
     result = run_script(script)
-    expect(result).to eq([
+    expect(result).to match_array([
       "db > Executed.",
       "db > (1, #{long_username}, #{long_email})",
       "Executed.",
@@ -95,7 +95,7 @@ describe 'database' do
       ".exit",
     ]
     result = run_script(script)
-    expect(result).to eq([
+    expect(result).to match_array([
       "db > String is too long.",
       "db > Executed.",
       "db > ",
@@ -109,7 +109,7 @@ describe 'database' do
       ".exit",
     ]
     result = run_script(script)
-    expect(result).to eq([
+    expect(result).to match_array([
       "db > ID must be positive.",
       "db > Executed.",
       "db > ",
@@ -124,7 +124,7 @@ describe 'database' do
       ".exit",
     ]
     result = run_script(script)
-    expect(result).to eq([
+    expect(result).to match_array([
       "db > Executed.",
       "db > Error: Duplicate key.",
       "db > (1, user1, person1@example.com)",
@@ -141,7 +141,7 @@ describe 'database' do
     script << ".exit"
     result = run_script(script)
 
-    expect(result).to eq([
+    expect(result).to match_array([
       "db > Executed.",
       "db > Executed.",
       "db > Executed.",
@@ -163,7 +163,7 @@ describe 'database' do
     script << ".exit"
     result = run_script(script)
 
-    expect(result[14...(result.length)]).to eq([
+    expect(result[14...(result.length)]).to match_array([
       "db > Tree:",
       "- internal (size 1)",
       "  - leaf (size 7)",
@@ -225,7 +225,7 @@ describe 'database' do
     ]
     result = run_script(script)
 
-    expect(result[30...(result.length)]).to eq([
+    expect(result[30...(result.length)]).to match_array([
       "db > Tree:",
       "- internal (size 3)",
       "  - leaf (size 7)",
@@ -276,7 +276,7 @@ describe 'database' do
     ]
     result = run_script(script)
 
-    expect(result).to eq([
+    expect(result).to match_array([
       "db > Constants:",
       "ROW_SIZE: 293",
       "COMMON_NODE_HEADER_SIZE: 6",
@@ -296,7 +296,7 @@ describe 'database' do
     script << "select"
     script << ".exit"
     result = run_script(script)
-    expect(result[15...result.length]).to eq([
+    expect(result[15...result.length]).to match_array([
       "db > (1, user1, person1@example.com)",
       "(2, user2, person2@example.com)",
       "(3, user3, person3@example.com)",

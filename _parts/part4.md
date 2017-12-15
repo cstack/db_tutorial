@@ -32,7 +32,7 @@ describe 'database' do
       "select",
       ".exit",
     ])
-    expect(result).to eq([
+    expect(result).to match_array([
       "db > Executed.",
       "db > (1, user1, person1@example.com)",
       "Executed.",
@@ -85,7 +85,7 @@ it 'allows inserting strings that are the maximum length' do
     ".exit",
   ]
   result = run_script(script)
-  expect(result).to eq([
+  expect(result).to match_array([
     "db > Executed.",
     "db > (1, #{long_username}, #{long_email})",
     "Executed.",
@@ -151,7 +151,7 @@ it 'prints error message if strings are too long' do
     ".exit",
   ]
   result = run_script(script)
-  expect(result).to eq([
+  expect(result).to match_array([
     "db > String is too long.",
     "db > Executed.",
     "db > ",
@@ -263,7 +263,7 @@ it 'prints an error message if id is negative' do
     ".exit",
   ]
   result = run_script(script)
-  expect(result).to eq([
+  expect(result).to match_array([
     "db > ID must be positive.",
     "db > Executed.",
     "db > ",
@@ -410,7 +410,7 @@ And we added tests:
 +      "select",
 +      ".exit",
 +    ])
-+    expect(result).to eq([
++    expect(result).to match_array([
 +      "db > Executed.",
 +      "db > (1, user1, person1@example.com)",
 +      "Executed.",
@@ -436,7 +436,7 @@ And we added tests:
 +      ".exit",
 +    ]
 +    result = run_script(script)
-+    expect(result).to eq([
++    expect(result).to match_array([
 +      "db > Executed.",
 +      "db > (1, #{long_username}, #{long_email})",
 +      "Executed.",
@@ -453,7 +453,7 @@ And we added tests:
 +      ".exit",
 +    ]
 +    result = run_script(script)
-+    expect(result).to eq([
++    expect(result).to match_array([
 +      "db > String is too long.",
 +      "db > Executed.",
 +      "db > ",
@@ -467,7 +467,7 @@ And we added tests:
 +      ".exit",
 +    ]
 +    result = run_script(script)
-+    expect(result).to eq([
++    expect(result).to match_array([
 +      "db > ID must be positive.",
 +      "db > Executed.",
 +      "db > ",

@@ -417,7 +417,7 @@ I'm also adding a test so we get alerted when those constants change:
 +    ]
 +    result = run_script(script)
 +
-+    expect(result).to eq([
++    expect(result).to match_array([
 +      "db > Constants:",
 +      "ROW_SIZE: 293",
 +      "COMMON_NODE_HEADER_SIZE: 6",
@@ -477,7 +477,7 @@ And a test
 +    script << ".exit"
 +    result = run_script(script)
 +
-+    expect(result).to eq([
++    expect(result).to match_array([
 +      "db > Executed.",
 +      "db > Executed.",
 +      "db > Executed.",
@@ -829,7 +829,7 @@ And the specs:
 +    script << ".exit"
 +    result = run_script(script)
 +
-+    expect(result).to eq([
++    expect(result).to match_array([
 +      "db > Executed.",
 +      "db > Executed.",
 +      "db > Executed.",
@@ -849,7 +849,7 @@ And the specs:
 +    ]
 +    result = run_script(script)
 +
-+    expect(result).to eq([
++    expect(result).to match_array([
 +      "db > Constants:",
 +      "ROW_SIZE: 293",
 +      "COMMON_NODE_HEADER_SIZE: 6",

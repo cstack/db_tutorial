@@ -13,7 +13,7 @@ it 'keeps data after closing connection' do
     "insert 1 user1 person1@example.com",
     ".exit",
   ])
-  expect(result1).to eq([
+  expect(result1).to match_array([
     "db > Executed.",
     "db > ",
   ])
@@ -21,7 +21,7 @@ it 'keeps data after closing connection' do
     "select",
     ".exit",
   ])
-  expect(result2).to eq([
+  expect(result2).to match_array([
     "db > (1, user1, person1@example.com)",
     "Executed.",
     "db > ",
@@ -533,7 +533,7 @@ index 21561ce..bc0180a 100644
 +      "insert 1 user1 person1@example.com",
 +      ".exit",
 +    ])
-+    expect(result1).to eq([
++    expect(result1).to match_array([
 +      "db > Executed.",
 +      "db > ",
 +    ])
@@ -542,7 +542,7 @@ index 21561ce..bc0180a 100644
 +      "select",
 +      ".exit",
 +    ])
-+    expect(result2).to eq([
++    expect(result2).to match_array([
 +      "db > (1, user1, person1@example.com)",
 +      "Executed.",
 +      "db > ",
@@ -577,7 +577,7 @@ And the diff to our tests:
 +      "insert 1 user1 person1@example.com",
 +      ".exit",
 +    ])
-+    expect(result1).to eq([
++    expect(result1).to match_array([
 +      "db > Executed.",
 +      "db > ",
 +    ])
@@ -586,7 +586,7 @@ And the diff to our tests:
 +      "select",
 +      ".exit",
 +    ])
-+    expect(result2).to eq([
++    expect(result2).to match_array([
 +      "db > (1, user1, person1@example.com)",
 +      "Executed.",
 +      "db > ",

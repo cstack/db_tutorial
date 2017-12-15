@@ -409,7 +409,7 @@ Here's a test case for the new printing functionality!
 +    script << ".exit"
 +    result = run_script(script)
 +
-+    expect(result[14...(result.length)]).to eq([
++    expect(result[14...(result.length)]).to match_array([
 +      "db > Tree:",
 +      "- internal (size 1)",
 +      "  - leaf (size 7)",

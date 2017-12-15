@@ -102,7 +102,7 @@ And that reveals that our 1400-row test outputs this error:
      script << ".exit"
      result = run_script(script)
 -    expect(result[-2]).to eq('db > Error: Table full.')
-+    expect(result.last(2)).to eq([
++    expect(result.last(2)).to match_array([
 +      "db > Executed.",
 +      "db > Need to implement updating parent after split",
 +    ])

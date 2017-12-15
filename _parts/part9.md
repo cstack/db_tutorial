@@ -184,7 +184,7 @@ And we can add a new test for duplicate keys:
 +      ".exit",
 +    ]
 +    result = run_script(script)
-+    expect(result).to eq([
++    expect(result).to match_array([
 +      "db > Executed.",
 +      "db > Error: Duplicate key.",
 +      "db > (1, user1, person1@example.com)",

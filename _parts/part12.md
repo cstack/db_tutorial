@@ -15,7 +15,7 @@ We now support constructing a multi-level btree, but we've broken `select` state
 +    script << ".exit"
 +    result = run_script(script)
 +
-+    expect(result[15...result.length]).to eq([
++    expect(result[15...result.length]).to match_array([
 +      "db > (1, user1, person1@example.com)",
 +      "(2, user2, person2@example.com)",
 +      "(3, user3, person3@example.com)",

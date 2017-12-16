@@ -182,7 +182,7 @@ Speaking of tests, our large-dataset test gets past our old stub and gets to our
 ```diff
 @@ -65,7 +65,7 @@ describe 'database' do
      result = run_script(script)
-     expect(result.last(2)).to eq([
+     expect(result.last(2)).to match_array([
        "db > Executed.",
 -      "db > Need to implement updating parent after split",
 +      "db > Need to implement splitting internal node",

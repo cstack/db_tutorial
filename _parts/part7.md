@@ -66,7 +66,7 @@ Let's say that the capacity of a leaf node is two key/value pairs. When we inser
 
 The internal node has 1 key and 2 pointers to child nodes. If we want to look up a key that is less than or equal to 5, we look in the left child. If we want to look up a key greater than 5, we look in the right child.
 
-Now let's insert the key "2". First we look up which leaf node it would be in if it was present, and we arrive at the left leaf node. The node is full, so we split the leaf node and create create a new entry in the parent node.
+Now let's insert the key "2". First we look up which leaf node it would be in if it was present, and we arrive at the left leaf node. The node is full, so we split the leaf node and create a new entry in the parent node.
 
 {% include image.html url="assets/images/btree4.png" description="four-node btree" %}
 

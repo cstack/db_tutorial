@@ -9,7 +9,7 @@ We're changing the format of our table from an unsorted array of rows to a B-Tre
 
 With the current format, each page stores only rows (no metadata) so it is pretty space efficient. Insertion is also fast because we just append to the end. However, finding a particular row can only be done by scanning the entire table. And if we want to delete a row, we have to fill in the hole by moving every row that comes after it.
 
-If we stored the table as an array, but kept rows sorted by id, we could use binary search to find a particular id. However, insertion would have the same problem as deletion where we have to move a lot of rows to make space.
+If we stored the table as an array, but kept rows sorted by id, we could use binary search to find a particular id. However, insertion would be slow because we would have to move a lot of rows to make space.
 
 Instead, we're going with a tree structure. Each node in the tree can contain a variable number of rows, so we have to store some information in each node to keep track of how many rows it contains. Plus there is the storage overhead of all the internal nodes which don't store any rows. In exchange for a larger database file, we get fast insertion, deletion and lookup.
 

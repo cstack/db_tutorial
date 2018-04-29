@@ -8,7 +8,7 @@ The B-Tree is the data structure SQLite uses to represent both tables and indexe
 Why is a tree a good data structure for a database?
 
 - Searching for a particular value is fast (logarithmic time)
-- Inserting / deleting a value is fast (constant-ish time to rebalance)
+- Inserting / deleting a value you've already found is fast (constant-ish time to rebalance)
 - Traversing a range of values is fast (unlike a hash map)
 
 A B-Tree is different from a binary tree (the "B" probably stands for the inventor's name, but could also stand for "balanced"). Here's an example B-Tree:
@@ -51,6 +51,7 @@ Let's work through an example to see how a B-tree grows as you insert elements i
 - up to 3 children per internal node
 - up to 2 keys per internal node
 - at least 2 children per internal node
+- at least 1 key per internal node
 
 An empty B-tree has a single node: the root node. The root node starts as a leaf node with zero key/value pairs:
 

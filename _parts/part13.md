@@ -295,7 +295,7 @@ After a bunch of debugging, I discovered this was due to some bad pointer arithm
  }
 ```
 
-`INTERNAL_NODE_CHILD_SIZE` is 4. My here intention was to add 4 bytes to the result of `internal_node_cell()`, but since `internal_node_cell()` returns a `uint32_t*`, this it was actually adding `4 * sizeof(uint32_t)` bytes. I fixed it by casting to a `void*` before doing the arithmetic.
+`INTERNAL_NODE_CHILD_SIZE` is 4. My intention here was to add 4 bytes to the result of `internal_node_cell()`, but since `internal_node_cell()` returns a `uint32_t*`, this it was actually adding `4 * sizeof(uint32_t)` bytes. I fixed it by casting to a `void*` before doing the arithmetic.
 
 NOTE! [Pointer arithmetic on void pointers is not part of the C standard and may not work with your compiler](https://stackoverflow.com/questions/3523145/pointer-arithmetic-for-void-pointer-in-c/46238658#46238658). I may do an article in the future on portability, but I'm leaving my void pointer arithmetic for now.
 

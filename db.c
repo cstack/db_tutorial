@@ -350,7 +350,7 @@ Cursor* leaf_node_find(Table* table, uint32_t page_num, uint32_t key) {
   Cursor* cursor = malloc(sizeof(Cursor));
   cursor->table = table;
   cursor->page_num = page_num;
-	cursor->end_of_table = false;
+  cursor->end_of_table = false;
 
   // Binary search
   uint32_t min_index = 0;

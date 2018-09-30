@@ -298,7 +298,7 @@ A cursor represents a position in the table. When our table was a simple array o
 
 ## Insertion Into a Leaf Node
 
-In this article we're only going to implement enough to get get a single-node tree. Recall from last article that a tree starts out as an empty leaf node:
+In this article we're only going to implement enough to get a single-node tree. Recall from last article that a tree starts out as an empty leaf node:
 
 {% include image.html url="assets/images/btree1.png" description="empty btree" %}
 

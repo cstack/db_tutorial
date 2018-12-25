@@ -316,6 +316,7 @@ When we open the database for the first time, the database file will be empty, s
    Table* table = malloc(sizeof(Table));
    table->pager = pager;
 -  table->num_rows = num_rows;
++  table->root_page_num = 0;
 +
 +  if (pager->num_pages == 0) {
 +    // New database file. Initialize page 0 as leaf node.
@@ -701,6 +702,7 @@ Next time, we'll implement finding a record by primary key, and start storing ro
    Table* table = malloc(sizeof(Table));
    table->pager = pager;
 -  table->num_rows = num_rows;
++  table->root_page_num = 0;
 +
 +  if (pager->num_pages == 0) {
 +    // New database file. Initialize page 0 as leaf node.

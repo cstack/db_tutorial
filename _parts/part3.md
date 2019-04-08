@@ -247,6 +247,14 @@ Now would be a great time to write some tests, for a couple reasons:
 
 We'll address those issues in the next part. For now, here's the complete diff from this part:
 ```diff
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdint.h>
++#include <stdint.h>
+
+ struct InputBuffer_t {
+
  typedef struct InputBuffer_t InputBuffer;
  
 +enum ExecuteResult_t { EXECUTE_SUCCESS, EXECUTE_TABLE_FULL };

@@ -72,6 +72,7 @@ int main(int argc, char* argv[]) {
     read_input(input_buffer);
 
     if (strcmp(input_buffer->buffer, ".exit") == 0) {
+      close_input_buffer(input_buffer);
       exit(EXIT_SUCCESS);
     } else {
       printf("Unrecognized command '%s'.\n", input_buffer->buffer);
@@ -109,7 +110,7 @@ To read a line of input, use [getline()](http://man7.org/linux/man-pages/man3/ge
 ```c
 ssize_t getline(char **lineptr, size_t *n, FILE *stream);
 ```
-`lineptr` : a pointer to the variable we use to point to the buffer containing the read line.
+`lineptr` : a pointer to the variable we use to point to the buffer containing the read line. If it set to `NULL` it is mallocatted by `getline` and should thus be freed by the user, even if the command fails.
 
 `n` : a pointer to the variable we use to save the size of allocated buffer.
 
@@ -134,6 +135,18 @@ void read_input(InputBuffer* input_buffer) {
   // Ignore trailing newline
   input_buffer->input_length = bytes_read - 1;
   input_buffer->buffer[bytes_read - 1] = 0;
+}
+```
+
+Now it is proper to define a function that frees the memory allocated for an
+instance of `InputBuffer *` and the `buffer` element of the respective
+structure (`getline` allocates memory for `input_buffer->buffer` in
+`read_input`).
+
+```c
+void close_input_buffer(InputBuffer* input_buffer) {
+    free(input_buffer->buffer);
+    free(input_buffer);
 }
 ```
 
@@ -196,6 +209,11 @@ void read_input(InputBuffer* input_buffer) {
   input_buffer->buffer[bytes_read - 1] = 0;
 }
 
+void close_input_buffer(InputBuffer* input_buffer) {
+    free(input_buffer->buffer);
+    free(input_buffer);
+}
+
 int main(int argc, char* argv[]) {
   InputBuffer* input_buffer = new_input_buffer();
   while (true) {
@@ -203,6 +221,7 @@ int main(int argc, char* argv[]) {
     read_input(input_buffer);
 
     if (strcmp(input_buffer->buffer, ".exit") == 0) {
+      close_input_buffer(input_buffer);
       exit(EXIT_SUCCESS);
     } else {
       printf("Unrecognized command '%s'.\n", input_buffer->buffer);

@@ -185,7 +185,7 @@ Lastly, we need to initialize the table and handle a few more error cases:
 
 ```diff
 + Table* new_table() {
-+  Table* table = malloc(sizeof(Table));
++  Table* table = calloc(sizeof(Table));
 +  table->num_rows = 0;
 +
 +  return table;
@@ -334,7 +334,7 @@ We'll address those issues in the next part. For now, here's the complete diff f
 +}
 +
 +Table* new_table() {
-+  Table* table = malloc(sizeof(Table));
++  Table* table = calloc(sizeof(Table));
 +  table->num_rows = 0;
 +
 +  return table;

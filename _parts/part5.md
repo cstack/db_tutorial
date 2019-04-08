@@ -66,7 +66,7 @@ I'm renaming `new_table()` to `db_open()` because it now has the effect of openi
 +  Pager* pager = pager_open(filename);
 +  uint32_t num_rows = pager->file_length / ROW_SIZE;
 +
-   Table* table = malloc(sizeof(Table));
+   Table* table = calloc(sizeof(Table));
 -  table->num_rows = 0;
 +  table->pager = pager;
 +  table->num_rows = num_rows;
@@ -413,7 +413,7 @@ Until then!
 +  Pager* pager = pager_open(filename);
 +  uint32_t num_rows = pager->file_length / ROW_SIZE;
 +
-   Table* table = malloc(sizeof(Table));
+   Table* table = calloc(sizeof(Table));
 -  table->num_rows = 0;
 +  table->pager = pager;
 +  table->num_rows = num_rows;

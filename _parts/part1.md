@@ -154,6 +154,7 @@ Finally, we parse and execute the command. There is only one recognized command 
 
 ```c
 if (strcmp(input_buffer->buffer, ".exit") == 0) {
+  close_input_buffer(input_buffer);
   exit(EXIT_SUCCESS);
 } else {
   printf("Unrecognized command '%s'.\n", input_buffer->buffer);

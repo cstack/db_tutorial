@@ -180,7 +180,7 @@ Alright, we've got a working REPL. In the next part, we'll start developing our 
 struct InputBuffer_t {
   char* buffer;
   size_t buffer_length;
-  ssize_t input_length;
+  size_t input_length;
 };
 typedef struct InputBuffer_t InputBuffer;
 

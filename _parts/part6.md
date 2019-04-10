@@ -124,24 +124,30 @@ Alright, that's it! Like I said, this was a shorter refactor that should help us
 
 Here's the complete diff to this part:
 ```diff
+@@ -78,6 +78,13 @@ struct Table_t {
  };
  typedef struct Table_t Table;
- 
+
 +struct Cursor_t {
 +  Table* table;
 +  uint32_t row_num;
-+  bool end_of_table;  // Indicates a position one past the last element
++  bool end_of_table; // Indicates a position one past the last element
 +};
 +typedef struct Cursor_t Cursor;
 +
  void print_row(Row* row) {
-   printf("(%d, %s, %s)\n", row->id, row->username, row->email);
+     printf("(%d, %s, %s)\n", row->id, row->username, row->email);
  }
-@@ -125,14 +132,40 @@ void* get_page(Pager* pager, uint32_t page_num) {
-   return pager->pages[page_num];
+@@ -126,12 +133,38 @@ void* get_page(Pager* pager, uint32_t page_num) {
+     return pager->pages[page_num];
  }
- 
+
 -void* row_slot(Table* table, uint32_t row_num) {
+-  uint32_t page_num = row_num / ROWS_PER_PAGE;
+-  void *page = get_page(table->pager, page_num);
+-  uint32_t row_offset = row_num % ROWS_PER_PAGE;
+-  uint32_t byte_offset = row_offset * ROW_SIZE;
+-  return page + byte_offset;
 +Cursor* table_start(Table* table) {
 +  Cursor* cursor = malloc(sizeof(Cursor));
 +  cursor->table = table;
@@ -162,55 +168,50 @@ Here's the complete diff to this part:
 +
 +void* cursor_value(Cursor* cursor) {
 +  uint32_t row_num = cursor->row_num;
-   uint32_t page_num = row_num / ROWS_PER_PAGE;
--  void* page = get_page(table->pager, page_num);
-+  void* page = get_page(cursor->table->pager, page_num);
-   uint32_t row_offset = row_num % ROWS_PER_PAGE;
-   uint32_t byte_offset = row_offset * ROW_SIZE;
-   return page + byte_offset;
- }
- 
++  uint32_t page_num = row_num / ROWS_PER_PAGE;
++  void *page = get_page(cursor->table->pager, page_num);
++  uint32_t row_offset = row_num % ROWS_PER_PAGE;
++  uint32_t byte_offset = row_offset * ROW_SIZE;
++  return page + byte_offset;
++}
++
 +void cursor_advance(Cursor* cursor) {
 +  cursor->row_num += 1;
 +  if (cursor->row_num >= cursor->table->num_rows) {
 +    cursor->end_of_table = true;
 +  }
-+}
-+
+ }
+
  Pager* pager_open(const char* filename) {
-   int fd = open(filename,
-                 O_RDWR |      // Read/Write mode
-@@ -315,19 +348,28 @@ ExecuteResult execute_insert(Statement* statement, Table* table) {
-   }
- 
+@@ -327,19 +360,28 @@ ExecuteResult execute_insert(Statement* statement, Table* table) {
+     }
+
    Row* row_to_insert = &(statement->row_to_insert);
 +  Cursor* cursor = table_end(table);
- 
+
 -  serialize_row(row_to_insert, row_slot(table, table->num_rows));
 +  serialize_row(row_to_insert, cursor_value(cursor));
    table->num_rows += 1;
- 
+
 +  free(cursor);
 +
    return EXECUTE_SUCCESS;
  }
- 
+
  ExecuteResult execute_select(Statement* statement, Table* table) {
 +  Cursor* cursor = table_start(table);
 +
    Row row;
 -  for (uint32_t i = 0; i < table->num_rows; i++) {
--    deserialize_row(row_slot(table, i), &row);
+-     deserialize_row(row_slot(table, i), &row);
 +  while (!(cursor->end_of_table)) {
-+    deserialize_row(cursor_value(cursor), &row);
-     print_row(&row);
-+    cursor_advance(cursor);
++     deserialize_row(cursor_value(cursor), &row);
+      print_row(&row);
++     cursor_advance(cursor);
    }
 +
 +  free(cursor);
 +
    return EXECUTE_SUCCESS;
  }
- 
-
 ```

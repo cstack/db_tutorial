@@ -110,13 +110,13 @@ We also need code to convert to and from the compact representation.
 Next, a `Table` structure that points to pages of rows and keeps track of how many rows there are:
 ```diff
 +const uint32_t PAGE_SIZE = 4096;
-+const uint32_t TABLE_MAX_PAGES = 100;
++#define TABLE_MAX_PAGES 100
 +const uint32_t ROWS_PER_PAGE = PAGE_SIZE / ROW_SIZE;
 +const uint32_t TABLE_MAX_ROWS = ROWS_PER_PAGE * TABLE_MAX_PAGES;
 +
 +struct Table_t {
 +  uint32_t num_rows;
-+  void** pages;
++  void* pages[TABLE_MAX_PAGES];
 +};
 +typedef struct Table_t Table;
 ```
@@ -188,9 +188,9 @@ memory release function and handle a few more error cases:
 + Table* new_table() {
 +  Table* table = malloc(sizeof(Table));
 +  table->num_rows = 0;
-+  // Allocate space for the pointers to the pages
-+  // and initialize them to NULL
-+  table->pages = calloc(TABLE_MAX_PAGES, sizeof(void *));
++  for (uint32_t i = 0; i < TABLE_MAX_PAGES; i++) {
++     table->pages[i] = NULL;
++  }
 +  return table;
 +}
 +
@@ -198,7 +198,6 @@ memory release function and handle a few more error cases:
 +    for (int i = 0; table->pages[i]; i++) {
 +	free(table->pages[i]);
 +    }
-+    free(table->pages);
 +    free(table);
 +}
 ```
@@ -266,7 +265,7 @@ We'll address those issues in the next part. For now, here's the complete diff f
 
  struct InputBuffer_t {
    char* buffer;
-@@ -10,6 +11,106 @@ struct InputBuffer_t {
+@@ -10,6 +11,105 @@ struct InputBuffer_t {
  };
  typedef struct InputBuffer_t InputBuffer;
 
@@ -292,9 +291,9 @@ We'll address those issues in the next part. For now, here's the complete diff f
 +#define COLUMN_USERNAME_SIZE 32
 +#define COLUMN_EMAIL_SIZE 255
 +struct Row_t {
-+    uint32_t id;
-+    char username[COLUMN_USERNAME_SIZE];
-+    char email[COLUMN_EMAIL_SIZE];
++  uint32_t id;
++  char username[COLUMN_USERNAME_SIZE];
++  char email[COLUMN_EMAIL_SIZE];
 +};
 +typedef struct Row_t Row;
 +
@@ -315,65 +314,64 @@ We'll address those issues in the next part. For now, here's the complete diff f
 +const uint32_t ROW_SIZE = ID_SIZE + USERNAME_SIZE + EMAIL_SIZE;
 +
 +const uint32_t PAGE_SIZE = 4096;
-+const uint32_t TABLE_MAX_PAGES = 100;
++#define TABLE_MAX_PAGES 100
 +const uint32_t ROWS_PER_PAGE = PAGE_SIZE / ROW_SIZE;
 +const uint32_t TABLE_MAX_ROWS = ROWS_PER_PAGE * TABLE_MAX_PAGES;
 +
 +struct Table_t {
-+    uint32_t num_rows;
-+    void** pages;
++  uint32_t num_rows;
++  void* pages[TABLE_MAX_PAGES];
 +};
 +typedef struct Table_t Table;
 +
 +void print_row(Row* row) {
-+    printf("(%d, %s, %s)\n", row->id, row->username, row->email);
++  printf("(%d, %s, %s)\n", row->id, row->username, row->email);
 +}
 +
 +void serialize_row(Row* source, void* destination) {
-+    memcpy(destination + ID_OFFSET, &(source->id), ID_SIZE);
-+    memcpy(destination + USERNAME_OFFSET, &(source->username), USERNAME_SIZE);
-+    memcpy(destination + EMAIL_OFFSET, &(source->email), EMAIL_SIZE);
++  memcpy(destination + ID_OFFSET, &(source->id), ID_SIZE);
++  memcpy(destination + USERNAME_OFFSET, &(source->username), USERNAME_SIZE);
++  memcpy(destination + EMAIL_OFFSET, &(source->email), EMAIL_SIZE);
 +}
 +
 +void deserialize_row(void *source, Row* destination) {
-+    memcpy(&(destination->id), source + ID_OFFSET, ID_SIZE);
-+    memcpy(&(destination->username), source + USERNAME_OFFSET, USERNAME_SIZE);
-+    memcpy(&(destination->email), source + EMAIL_OFFSET, EMAIL_SIZE);
++  memcpy(&(destination->id), source + ID_OFFSET, ID_SIZE);
++  memcpy(&(destination->username), source + USERNAME_OFFSET, USERNAME_SIZE);
++  memcpy(&(destination->email), source + EMAIL_OFFSET, EMAIL_SIZE);
 +}
 +
 +void* row_slot(Table* table, uint32_t row_num) {
-+    uint32_t page_num = row_num / ROWS_PER_PAGE;
-+    void *page = table->pages[page_num];
-+    if (page == NULL) {
-+	// Allocate memory only when we try to access page
-+	page = table->pages[page_num] = malloc(PAGE_SIZE);
-+    }
-+    uint32_t row_offset = row_num % ROWS_PER_PAGE;
-+    uint32_t byte_offset = row_offset * ROW_SIZE;
-+    return page + byte_offset;
++  uint32_t page_num = row_num / ROWS_PER_PAGE;
++  void *page = table->pages[page_num];
++  if (page == NULL) {
++     // Allocate memory only when we try to access page
++     page = table->pages[page_num] = malloc(PAGE_SIZE);
++  }
++  uint32_t row_offset = row_num % ROWS_PER_PAGE;
++  uint32_t byte_offset = row_offset * ROW_SIZE;
++  return page + byte_offset;
 +}
 +
 +Table* new_table() {
-+    Table* table = malloc(sizeof(Table));
-+    table->num_rows = 0;
-+    // Allocate space for the pointers to the pages
-+    // and initialize them to NULL
-+    table->pages = calloc(TABLE_MAX_PAGES, sizeof(void *));
-+    return table;
++  Table* table = malloc(sizeof(Table));
++  table->num_rows = 0;
++  for (uint32_t i = 0; i < TABLE_MAX_PAGES; i++) {
++     table->pages[i] = NULL;
++  }
++  return table;
 +}
 +
 +void free_table(Table* table) {
-+    for (int i = 0; table->pages[i]; i++) {
-+	free(table->pages[i]);
-+    }
-+    free(table->pages);
-+    free(table);
++  for (int i = 0; table->pages[i]; i++) {
++     free(table->pages[i]);
++  }
++  free(table);
 +}
 +
  InputBuffer* new_input_buffer() {
    InputBuffer* input_buffer = malloc(sizeof(InputBuffer));
    input_buffer->buffer = NULL;
-@@ -40,17 +141,105 @@ void close_input_buffer(InputBuffer* input_buffer) {
+@@ -40,17 +140,105 @@ void close_input_buffer(InputBuffer* input_buffer) {
      free(input_buffer);
  }
 
@@ -409,25 +407,25 @@ We'll address those issues in the next part. For now, here's the complete diff f
 +}
 +
 +ExecuteResult execute_insert(Statement* statement, Table* table) {
-+    if (table->num_rows >= TABLE_MAX_ROWS) {
-+	return EXECUTE_TABLE_FULL;
-+    }
++  if (table->num_rows >= TABLE_MAX_ROWS) {
++     return EXECUTE_TABLE_FULL;
++  }
 +
-+    Row* row_to_insert = &(statement->row_to_insert);
++  Row* row_to_insert = &(statement->row_to_insert);
 +
-+    serialize_row(row_to_insert, row_slot(table, table->num_rows));
-+    table->num_rows += 1;
++  serialize_row(row_to_insert, row_slot(table, table->num_rows));
++  table->num_rows += 1;
 +
-+    return EXECUTE_SUCCESS;
++  return EXECUTE_SUCCESS;
 +}
 +
 +ExecuteResult execute_select(Statement* statement, Table* table) {
-+    Row row;
-+    for (uint32_t i = 0; i < table->num_rows; i++) {
-+	deserialize_row(row_slot(table, i), &row);
-+	print_row(&row);
-+    }
-+    return EXECUTE_SUCCESS;
++  Row row;
++  for (uint32_t i = 0; i < table->num_rows; i++) {
++     deserialize_row(row_slot(table, i), &row);
++     print_row(&row);
++  }
++  return EXECUTE_SUCCESS;
 +}
 +
 +ExecuteResult execute_statement(Statement* statement, Table *table) {

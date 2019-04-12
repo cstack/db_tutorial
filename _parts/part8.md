@@ -93,11 +93,11 @@ The code to access keys, values and metadata all involve pointer arithmetic usin
 
 ```diff
 +uint32_t* leaf_node_num_cells(void* node) {
-+  return (char *)node + LEAF_NODE_NUM_CELLS_OFFSET;
++  return node + LEAF_NODE_NUM_CELLS_OFFSET;
 +}
 +
 +void* leaf_node_cell(void* node, uint32_t cell_num) {
-+  return (char *)node + LEAF_NODE_HEADER_SIZE + cell_num * LEAF_NODE_CELL_SIZE;
++  return node + LEAF_NODE_HEADER_SIZE + cell_num * LEAF_NODE_CELL_SIZE;
 +}
 +
 +uint32_t* leaf_node_key(void* node, uint32_t cell_num) {
@@ -503,8 +503,10 @@ Next time, we'll implement finding a record by primary key, and start storing ro
 ## Complete Diff
 
 ```diff
+@@ -62,29 +62,101 @@ const uint32_t ROW_SIZE = ID_SIZE + USERNAME_SIZE + EMAIL_SIZE;
+
  const uint32_t PAGE_SIZE = 4096;
- const uint32_t TABLE_MAX_PAGES = 100;
+ #define TABLE_MAX_PAGES 100
 -const uint32_t ROWS_PER_PAGE = PAGE_SIZE / ROW_SIZE;
 -const uint32_t TABLE_MAX_ROWS = ROWS_PER_PAGE * TABLE_MAX_PAGES;
  
@@ -531,10 +533,7 @@ Next time, we'll implement finding a record by primary key, and start storing ro
    bool end_of_table;  // Indicates a position one past the last element
  };
  typedef struct Cursor_t Cursor;
-@@ -88,6 +88,77 @@ void print_row(Row* row) {
-   printf("(%d, %s, %s)\n", row->id, row->username, row->email);
- }
- 
+
 +enum NodeType_t { NODE_INTERNAL, NODE_LEAF };
 +typedef enum NodeType_t NodeType;
 +
@@ -605,11 +604,11 @@ Next time, we'll implement finding a record by primary key, and start storing ro
 +  }
 +}
 +
- void serialize_row(Row* source, void* destination) {
-   memcpy(destination + ID_OFFSET, &(source->id), ID_SIZE);
-   memcpy(destination + USERNAME_OFFSET, &(source->username), USERNAME_SIZE);
-@@ -100,6 +171,8 @@ void deserialize_row(void* source, Row* destination) {
-   memcpy(&(destination->email), source + EMAIL_OFFSET, EMAIL_SIZE);
+ void print_row(Row* row) {
+     printf("(%d, %s, %s)\n", row->id, row->username, row->email);
+ }
+@@ -101,6 +173,8 @@ void deserialize_row(void *source, Row* destination) {
+     memcpy(&(destination->email), source + EMAIL_OFFSET, EMAIL_SIZE);
  }
  
 +void initialize_leaf_node(void* node) { *leaf_node_num_cells(node) = 0; }
@@ -617,7 +616,7 @@ Next time, we'll implement finding a record by primary key, and start storing ro
  void* get_page(Pager* pager, uint32_t page_num) {
    if (page_num > TABLE_MAX_PAGES) {
      printf("Tried to fetch page number out of bounds. %d > %d\n", page_num,
-@@ -127,6 +200,10 @@ void* get_page(Pager* pager, uint32_t page_num) {
+@@ -128,6 +202,10 @@ void* get_page(Pager* pager, uint32_t page_num) {
      }
  
      pager->pages[page_num] = page;
@@ -628,7 +627,7 @@ Next time, we'll implement finding a record by primary key, and start storing ro
    }
  
    return pager->pages[page_num];
-@@ -135,8 +212,12 @@ void* get_page(Pager* pager, uint32_t page_num) {
+@@ -136,8 +214,12 @@ void* get_page(Pager* pager, uint32_t page_num) {
  Cursor* table_start(Table* table) {
    Cursor* cursor = malloc(sizeof(Cursor));
    cursor->table = table;
@@ -643,7 +642,7 @@ Next time, we'll implement finding a record by primary key, and start storing ro
  
    return cursor;
  }
-@@ -144,24 +225,28 @@ Cursor* table_start(Table* table) {
+@@ -145,24 +227,28 @@ Cursor* table_start(Table* table) {
  Cursor* table_end(Table* table) {
    Cursor* cursor = malloc(sizeof(Cursor));
    cursor->table = table;
@@ -680,7 +679,7 @@ Next time, we'll implement finding a record by primary key, and start storing ro
      cursor->end_of_table = true;
    }
  }
-@@ -184,6 +269,12 @@ Pager* pager_open(const char* filename) {
+@@ -185,6 +271,12 @@ Pager* pager_open(const char* filename) {
    Pager* pager = malloc(sizeof(Pager));
    pager->file_descriptor = fd;
    pager->file_length = file_length;
@@ -694,6 +693,7 @@ Next time, we'll implement finding a record by primary key, and start storing ro
    for (uint32_t i = 0; i < TABLE_MAX_PAGES; i++) {
      pager->pages[i] = NULL;
 @@ -194,11 +285,15 @@ Pager* pager_open(const char* filename) {
+@@ -195,11 +287,16 @@ Pager* pager_open(const char* filename) {
  
  Table* db_open(const char* filename) {
    Pager* pager = pager_open(filename);
@@ -712,8 +712,8 @@ Next time, we'll implement finding a record by primary key, and start storing ro
  
    return table;
  }
-@@ -228,7 +323,7 @@ void read_input(InputBuffer* input_buffer) {
-   input_buffer->buffer[bytes_read - 1] = 0;
+@@ -234,7 +331,7 @@ void close_input_buffer(InputBuffer* input_buffer) {
+     free(input_buffer);
  }
  
 -void pager_flush(Pager* pager, uint32_t page_num, uint32_t size) {
@@ -722,6 +722,7 @@ Next time, we'll implement finding a record by primary key, and start storing ro
      printf("Tried to flush null page\n");
      exit(EXIT_FAILURE);
 @@ -242,7 +337,7 @@ void pager_flush(Pager* pager, uint32_t page_num, uint32_t size) {
+@@ -249,7 +346,7 @@ void pager_flush(Pager* pager, uint32_t page_num, uint32_t size) {
    }
  
    ssize_t bytes_written =
@@ -731,6 +732,7 @@ Next time, we'll implement finding a record by primary key, and start storing ro
    if (bytes_written == -1) {
      printf("Error writing: %d\n", errno);
 @@ -252,29 +347,16 @@ void pager_flush(Pager* pager, uint32_t page_num, uint32_t size) {
+@@ -260,29 +357,16 @@ void pager_flush(Pager* pager, uint32_t page_num, uint32_t size) {
  
  void db_close(Table* table) {
    Pager* pager = table->pager;
@@ -762,7 +764,7 @@ Next time, we'll implement finding a record by primary key, and start storing ro
    int result = close(pager->file_descriptor);
    if (result == -1) {
      printf("Error closing db file.\n");
-@@ -294,6 +376,14 @@ MetaCommandResult do_meta_command(InputBuffer* input_buffer, Table* table) {
+@@ -305,6 +389,14 @@ MetaCommandResult do_meta_command(InputBuffer* input_buffer, Table *table) {
    if (strcmp(input_buffer->buffer, ".exit") == 0) {
      db_close(table);
      exit(EXIT_SUCCESS);
@@ -777,7 +779,7 @@ Next time, we'll implement finding a record by primary key, and start storing ro
    } else {
      return META_COMMAND_UNRECOGNIZED_COMMAND;
    }
-@@ -342,16 +432,39 @@ PrepareResult prepare_statement(InputBuffer* input_buffer,
+@@ -354,16 +446,39 @@ PrepareResult prepare_statement(InputBuffer* input_buffer,
    return PREPARE_UNRECOGNIZED_STATEMENT;
  }
  

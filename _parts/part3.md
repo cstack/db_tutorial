@@ -132,7 +132,7 @@ Speaking of which, here is how we figure out where to read/write in memory for a
 +void* row_slot(Table* table, uint32_t row_num) {
 +  uint32_t page_num = row_num / ROWS_PER_PAGE;
 +  void* page = table->pages[page_num];
-+  if (page = NULL) {
++  if (page == NULL) {
 +    // Allocate memory only when we try to access page
 +    page = table->pages[page_num] = malloc(PAGE_SIZE);
 +  }

@@ -176,12 +176,13 @@ The skeleton of our database is taking shape... wouldn't it be nice if it stored
  InputBuffer* new_input_buffer() {
    InputBuffer* input_buffer = malloc(sizeof(InputBuffer));
    input_buffer->buffer = NULL;
-@@ -35,16 +52,66 @@ void read_input(InputBuffer* input_buffer) {
-   input_buffer->buffer[bytes_read - 1] = 0;
+@@ -40,17 +57,67 @@ void close_input_buffer(InputBuffer* input_buffer) {
+     free(input_buffer);
  }
  
 +MetaCommandResult do_meta_command(InputBuffer* input_buffer) {
 +  if (strcmp(input_buffer->buffer, ".exit") == 0) {
++    close_input_buffer(input_buffer);
 +    exit(EXIT_SUCCESS);
 +  } else {
 +    return META_COMMAND_UNRECOGNIZED_COMMAND;
@@ -220,6 +221,7 @@ The skeleton of our database is taking shape... wouldn't it be nice if it stored
      read_input(input_buffer);
  
 -    if (strcmp(input_buffer->buffer, ".exit") == 0) {
+-      close_input_buffer(input_buffer);
 -      exit(EXIT_SUCCESS);
 -    } else {
 -      printf("Unrecognized command '%s'.\n", input_buffer->buffer);

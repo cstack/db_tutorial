@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 #include <unistd.h>
 
 struct InputBuffer_t {
@@ -16,7 +17,6 @@ typedef struct InputBuffer_t InputBuffer;
 enum ExecuteResult_t {
   EXECUTE_SUCCESS,
   EXECUTE_DUPLICATE_KEY,
-  EXECUTE_TABLE_FULL
 };
 typedef enum ExecuteResult_t ExecuteResult;
 
@@ -38,8 +38,8 @@ typedef enum PrepareResult_t PrepareResult;
 enum StatementType_t { STATEMENT_INSERT, STATEMENT_SELECT };
 typedef enum StatementType_t StatementType;
 
-const uint32_t COLUMN_USERNAME_SIZE = 32;
-const uint32_t COLUMN_EMAIL_SIZE = 255;
+#define COLUMN_USERNAME_SIZE 32
+#define COLUMN_EMAIL_SIZE 255
 struct Row_t {
   uint32_t id;
   char username[COLUMN_USERNAME_SIZE + 1];
@@ -64,7 +64,7 @@ const uint32_t EMAIL_OFFSET = USERNAME_OFFSET + USERNAME_SIZE;
 const uint32_t ROW_SIZE = ID_SIZE + USERNAME_SIZE + EMAIL_SIZE;
 
 const uint32_t PAGE_SIZE = 4096;
-const uint32_t TABLE_MAX_PAGES = 100;
+#define TABLE_MAX_PAGES 100
 
 struct Pager_t {
   int file_descriptor;
@@ -536,6 +536,11 @@ void read_input(InputBuffer* input_buffer) {
   input_buffer->buffer[bytes_read - 1] = 0;
 }
 
+void close_input_buffer(InputBuffer* input_buffer) {
+    free(input_buffer->buffer);
+    free(input_buffer);
+}
+
 void pager_flush(Pager* pager, uint32_t page_num) {
   if (pager->pages[page_num] == NULL) {
     printf("Tried to flush null page\n");
@@ -583,10 +588,12 @@ void db_close(Table* table) {
     }
   }
   free(pager);
+  free(table);
 }
 
 MetaCommandResult do_meta_command(InputBuffer* input_buffer, Table* table) {
   if (strcmp(input_buffer->buffer, ".exit") == 0) {
+    close_input_buffer(input_buffer);
     db_close(table);
     exit(EXIT_SUCCESS);
   } else if (strcmp(input_buffer->buffer, ".btree") == 0) {
@@ -903,9 +910,6 @@ int main(int argc, char* argv[]) {
         break;
       case (EXECUTE_DUPLICATE_KEY):
         printf("Error: Duplicate key.\n");
-        break;
-      case (EXECUTE_TABLE_FULL):
-        printf("Error: Table full.\n");
         break;
     }
   }

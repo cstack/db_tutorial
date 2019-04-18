@@ -377,7 +377,7 @@ with a new recursive function that takes any node, then prints it and its childr
 +        child = *internal_node_child(node, i);
 +        print_tree(pager, child, indentation_level + 1);
 +
-+        indent(indentation_level);
++        indent(indentation_level + 1);
 +        printf("- key %d\n", *internal_node_key(node, i));
 +      }
 +      child = *internal_node_right_child(node);
@@ -420,7 +420,7 @@ Here's a test case for the new printing functionality!
 +      "    - 5",
 +      "    - 6",
 +      "    - 7",
-+      "- key 7",
++      "  - key 7",
 +      "  - leaf (size 7)",
 +      "    - 8",
 +      "    - 9",

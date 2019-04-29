@@ -44,8 +44,8 @@ That means we need to upgrade our `prepare_statement` function to parse argument
 We store those parsed arguments into a new `Row` data structure inside the statement object:
 
 ```diff
-+#define COLUMN_USERNAME_SIZE 32;
-+#define COLUMN_EMAIL_SIZE 255;
++#define COLUMN_USERNAME_SIZE 32
++#define COLUMN_EMAIL_SIZE 255
 +struct Row_t {
 +  uint32_t id;
 +  char username[COLUMN_USERNAME_SIZE];

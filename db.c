@@ -1,10 +1,10 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdint.h>
 #include <unistd.h>
 
 typedef struct {
@@ -526,8 +526,8 @@ void read_input(InputBuffer* input_buffer) {
 }
 
 void close_input_buffer(InputBuffer* input_buffer) {
-    free(input_buffer->buffer);
-    free(input_buffer);
+  free(input_buffer->buffer);
+  free(input_buffer);
 }
 
 void pager_flush(Pager* pager, uint32_t page_num) {
@@ -809,7 +809,7 @@ ExecuteResult execute_insert(Statement* statement, Table* table) {
   uint32_t key_to_insert = row_to_insert->id;
   Cursor* cursor = table_find(table, key_to_insert);
 
-  void *node = get_page(table->pager, cursor->page_num);
+  void* node = get_page(table->pager, cursor->page_num);
   uint32_t num_cells = *leaf_node_num_cells(node);
 
   if (cursor->cell_num < num_cells) {

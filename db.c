@@ -7,51 +7,44 @@
 #include <stdint.h>
 #include <unistd.h>
 
-struct InputBuffer_t {
+typedef struct {
   char* buffer;
   size_t buffer_length;
   ssize_t input_length;
-};
-typedef struct InputBuffer_t InputBuffer;
+} InputBuffer;
 
-enum ExecuteResult_t {
+typedef enum {
   EXECUTE_SUCCESS,
   EXECUTE_DUPLICATE_KEY,
-};
-typedef enum ExecuteResult_t ExecuteResult;
+} ExecuteResult;
 
-enum MetaCommandResult_t {
+typedef enum {
   META_COMMAND_SUCCESS,
   META_COMMAND_UNRECOGNIZED_COMMAND
-};
-typedef enum MetaCommandResult_t MetaCommandResult;
+} MetaCommandResult;
 
-enum PrepareResult_t {
+typedef enum {
   PREPARE_SUCCESS,
   PREPARE_NEGATIVE_ID,
   PREPARE_STRING_TOO_LONG,
   PREPARE_SYNTAX_ERROR,
   PREPARE_UNRECOGNIZED_STATEMENT
-};
-typedef enum PrepareResult_t PrepareResult;
+} PrepareResult;
 
-enum StatementType_t { STATEMENT_INSERT, STATEMENT_SELECT };
-typedef enum StatementType_t StatementType;
+typedef enum { STATEMENT_INSERT, STATEMENT_SELECT } StatementType;
 
 #define COLUMN_USERNAME_SIZE 32
 #define COLUMN_EMAIL_SIZE 255
-struct Row_t {
+typedef struct {
   uint32_t id;
   char username[COLUMN_USERNAME_SIZE + 1];
   char email[COLUMN_EMAIL_SIZE + 1];
-};
-typedef struct Row_t Row;
+} Row;
 
-struct Statement_t {
+typedef struct {
   StatementType type;
   Row row_to_insert;  // only used by insert statement
-};
-typedef struct Statement_t Statement;
+} Statement;
 
 #define size_of_attribute(Struct, Attribute) sizeof(((Struct*)0)->Attribute)
 
@@ -66,34 +59,30 @@ const uint32_t ROW_SIZE = ID_SIZE + USERNAME_SIZE + EMAIL_SIZE;
 const uint32_t PAGE_SIZE = 4096;
 #define TABLE_MAX_PAGES 100
 
-struct Pager_t {
+typedef struct {
   int file_descriptor;
   uint32_t file_length;
   uint32_t num_pages;
   void* pages[TABLE_MAX_PAGES];
-};
-typedef struct Pager_t Pager;
+} Pager;
 
-struct Table_t {
+typedef struct {
   Pager* pager;
   uint32_t root_page_num;
-};
-typedef struct Table_t Table;
+} Table;
 
-struct Cursor_t {
+typedef struct {
   Table* table;
   uint32_t page_num;
   uint32_t cell_num;
   bool end_of_table;  // Indicates a position one past the last element
-};
-typedef struct Cursor_t Cursor;
+} Cursor;
 
 void print_row(Row* row) {
   printf("(%d, %s, %s)\n", row->id, row->username, row->email);
 }
 
-enum NodeType_t { NODE_INTERNAL, NODE_LEAF };
-typedef enum NodeType_t NodeType;
+typedef enum { NODE_INTERNAL, NODE_LEAF } NodeType;
 
 /*
  * Common Node Header Layout

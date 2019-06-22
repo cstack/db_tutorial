@@ -83,12 +83,11 @@ int main(int argc, char* argv[]) {
 
 We'll define `InputBuffer` as a small wrapper around the state we need to store to interact with [getline()](http://man7.org/linux/man-pages/man3/getline.3.html). (More on that in a minute)
 ```c
-struct InputBuffer_t {
+typedef struct {
   char* buffer;
   size_t buffer_length;
   ssize_t input_length;
-};
-typedef struct InputBuffer_t InputBuffer;
+} InputBuffer;
 
 InputBuffer* new_input_buffer() {
   InputBuffer* input_buffer = malloc(sizeof(InputBuffer));
@@ -178,12 +177,11 @@ Alright, we've got a working REPL. In the next part, we'll start developing our 
 #include <stdlib.h>
 #include <string.h>
 
-struct InputBuffer_t {
+typedef struct {
   char* buffer;
   size_t buffer_length;
   ssize_t input_length;
-};
-typedef struct InputBuffer_t InputBuffer;
+} InputBuffer;
 
 InputBuffer* new_input_buffer() {
   InputBuffer* input_buffer = malloc(sizeof(InputBuffer));

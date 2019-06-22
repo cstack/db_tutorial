@@ -46,18 +46,16 @@ We store those parsed arguments into a new `Row` data structure inside the state
 ```diff
 +#define COLUMN_USERNAME_SIZE 32
 +#define COLUMN_EMAIL_SIZE 255
-+struct Row_t {
++typedef struct {
 +  uint32_t id;
 +  char username[COLUMN_USERNAME_SIZE];
 +  char email[COLUMN_EMAIL_SIZE];
-+};
-+typedef struct Row_t Row;
++} Row;
 +
- struct Statement_t {
+ typedef struct {
    StatementType type;
 +  Row row_to_insert;  // only used by insert statement
- };
- typedef struct Statement_t Statement;
+ } Statement;
 ```
 
 Now we need to copy that data into some data structure representing the table. SQLite uses a B-tree for fast lookups, inserts and deletes. We'll start with something simpler. Like a B-tree, it will group rows into pages, but instead of arranging those pages as a tree it will arrange them as an array.
@@ -114,11 +112,10 @@ Next, a `Table` structure that points to pages of rows and keeps track of how ma
 +const uint32_t ROWS_PER_PAGE = PAGE_SIZE / ROW_SIZE;
 +const uint32_t TABLE_MAX_ROWS = ROWS_PER_PAGE * TABLE_MAX_PAGES;
 +
-+struct Table_t {
++typedef struct {
 +  uint32_t num_rows;
 +  void* pages[TABLE_MAX_PAGES];
-+};
-+typedef struct Table_t Table;
++} Table;
 ```
 
 I'm making our page size 4 kilobytes because it's the same size as a page used in the virtual memory systems of most computer architectures. This means one page in our database corresponds to one page used by the operating system. The operating system will move pages in and out of memory as whole units instead of breaking them up.
@@ -263,45 +260,38 @@ We'll address those issues in the next part. For now, here's the complete diff f
  #include <string.h>
 +#include <stdint.h>
 
- struct InputBuffer_t {
+ typedef struct {
    char* buffer;
-@@ -10,6 +11,105 @@ struct InputBuffer_t {
- };
- typedef struct InputBuffer_t InputBuffer;
+@@ -10,6 +11,105 @@ typedef struct {
+ } InputBuffer;
 
-+enum ExecuteResult_t { EXECUTE_SUCCESS, EXECUTE_TABLE_FULL };
-+typedef enum ExecuteResult_t ExecuteResult;
++typedef enum { EXECUTE_SUCCESS, EXECUTE_TABLE_FULL } ExecuteResult;
 +
-+enum MetaCommandResult_t {
++typedef enum {
 +  META_COMMAND_SUCCESS,
 +  META_COMMAND_UNRECOGNIZED_COMMAND
-+};
-+typedef enum MetaCommandResult_t MetaCommandResult;
++} MetaCommandResult;
 +
-+enum PrepareResult_t {
++typedef enum {
 +  PREPARE_SUCCESS,
 +  PREPARE_SYNTAX_ERROR,
 +  PREPARE_UNRECOGNIZED_STATEMENT
-+ };
-+typedef enum PrepareResult_t PrepareResult;
++ } PrepareResult;
 +
-+enum StatementType_t { STATEMENT_INSERT, STATEMENT_SELECT };
-+typedef enum StatementType_t StatementType;
++typedef enum { STATEMENT_INSERT, STATEMENT_SELECT } StatementType;
 +
 +#define COLUMN_USERNAME_SIZE 32
 +#define COLUMN_EMAIL_SIZE 255
-+struct Row_t {
++typedef struct {
 +  uint32_t id;
 +  char username[COLUMN_USERNAME_SIZE];
 +  char email[COLUMN_EMAIL_SIZE];
-+};
-+typedef struct Row_t Row;
++} Row;
 +
-+struct Statement_t {
++typedef struct {
 +  StatementType type;
 +  Row row_to_insert; //only used by insert statement
-+};
-+typedef struct Statement_t Statement;
++} Statement;
 +
 +#define size_of_attribute(Struct, Attribute) sizeof(((Struct*)0)->Attribute)
 +
@@ -318,11 +308,10 @@ We'll address those issues in the next part. For now, here's the complete diff f
 +const uint32_t ROWS_PER_PAGE = PAGE_SIZE / ROW_SIZE;
 +const uint32_t TABLE_MAX_ROWS = ROWS_PER_PAGE * TABLE_MAX_PAGES;
 +
-+struct Table_t {
++typedef struct {
 +  uint32_t num_rows;
 +  void* pages[TABLE_MAX_PAGES];
-+};
-+typedef struct Table_t Table;
++} Table;
 +
 +void print_row(Row* row) {
 +  printf("(%d, %s, %s)\n", row->id, row->username, row->email);

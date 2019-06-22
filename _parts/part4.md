@@ -121,14 +121,13 @@ db >
 What's going on? If you take a look at our definition of a Row, we allocate exactly 32 bytes for username and exactly 255 bytes for email. But [C strings](http://www.cprogramming.com/tutorial/c/lesson9.html) are supposed to end with a null character, which we didn't allocate space for. The solution is to allocate one additional byte:
 ```diff
  const uint32_t COLUMN_EMAIL_SIZE = 255;
- struct Row_t {
+ typedef struct {
    uint32_t id;
 -  char username[COLUMN_USERNAME_SIZE];
 -  char email[COLUMN_EMAIL_SIZE];
 +  char username[COLUMN_USERNAME_SIZE + 1];
 +  char email[COLUMN_EMAIL_SIZE + 1];
- };
- typedef struct Row_t Row;
+ } Row;
  ```
 
  And indeed that fixes it:
@@ -305,7 +304,7 @@ It's gonna be great.
 
 Here's the complete diff for this part:
 ```diff
-@@ -22,6 +22,8 @@ typedef enum MetaCommandResult_t MetaCommandResult;
+@@ -22,6 +22,8 @@
 
  enum PrepareResult_t {
    PREPARE_SUCCESS,
@@ -314,16 +313,15 @@ Here's the complete diff for this part:
    PREPARE_SYNTAX_ERROR,
    PREPARE_UNRECOGNIZED_STATEMENT
   };
-@@ -34,8 +36,8 @@ typedef enum StatementType_t StatementType;
+@@ -34,8 +36,8 @@
  #define COLUMN_EMAIL_SIZE 255
- struct Row_t {
+ typedef struct {
    uint32_t id;
 -  char username[COLUMN_USERNAME_SIZE];
 -  char email[COLUMN_EMAIL_SIZE];
 +  char username[COLUMN_USERNAME_SIZE + 1];
 +  char email[COLUMN_EMAIL_SIZE + 1];
- };
- typedef struct Row_t Row;
+ } Row;
 
 @@ -150,18 +152,40 @@ MetaCommandResult do_meta_command(InputBuffer* input_buffer, Table *table) {
    }

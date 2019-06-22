@@ -26,8 +26,7 @@ Instead, we're going with a tree structure. Each node in the tree can contain a 
 Leaf nodes and internal nodes have different layouts. Let's make an enum to keep track of node type:
 
 ```diff
-+enum NodeType_t { NODE_INTERNAL, NODE_LEAF };
-+typedef enum NodeType_t NodeType;
++typedef enum { NODE_INTERNAL, NODE_LEAF } NodeType;
 ```
 
 Each node will correspond to one page. Internal nodes will point to their children by storing the page number that stores the child. The btree asks the pager for a particular page number and gets back a pointer into the page cache. Pages are stored in the database file one after the other in order of page number.
@@ -175,20 +174,18 @@ Now it makes more sense to store the number of pages in our database rather than
 -const uint32_t ROWS_PER_PAGE = PAGE_SIZE / ROW_SIZE;
 -const uint32_t TABLE_MAX_ROWS = ROWS_PER_PAGE * TABLE_MAX_PAGES;
  
- struct Pager_t {
+ typedef struct {
    int file_descriptor;
    uint32_t file_length;
 +  uint32_t num_pages;
    void* pages[TABLE_MAX_PAGES];
- };
- typedef struct Pager_t Pager;
+ } Pager;
  
- struct Table_t {
+ typedef struct {
    Pager* pager;
 -  uint32_t num_rows;
 +  uint32_t root_page_num;
- };
- typedef struct Table_t Table;
+ } Table;
 ```
 
 ```diff
@@ -226,14 +223,13 @@ Now it makes more sense to store the number of pages in our database rather than
 A cursor represents a position in the table. When our table was a simple array of rows, we could access a row given just the row number. Now that it's a tree, we identify a position by the page number of the node, and the cell number within that node.
 
 ```diff
- struct Cursor_t {
+ typedef struct {
    Table* table;
 -  uint32_t row_num;
 +  uint32_t page_num;
 +  uint32_t cell_num;
    bool end_of_table;  // Indicates a position one past the last element
- };
- typedef struct Cursor_t Cursor;
+ } Cursor;
 ```
 
 ```diff
@@ -510,32 +506,28 @@ Next time, we'll implement finding a record by primary key, and start storing ro
 -const uint32_t ROWS_PER_PAGE = PAGE_SIZE / ROW_SIZE;
 -const uint32_t TABLE_MAX_ROWS = ROWS_PER_PAGE * TABLE_MAX_PAGES;
  
- struct Pager_t {
+ typedef struct {
    int file_descriptor;
    uint32_t file_length;
 +  uint32_t num_pages;
    void* pages[TABLE_MAX_PAGES];
- };
- typedef struct Pager_t Pager;
+ } Pager;
  
- struct Table_t {
+ typedef struct {
    Pager* pager;
 -  uint32_t num_rows;
 +  uint32_t root_page_num;
- };
- typedef struct Table_t Table;
+ } Table;
  
- struct Cursor_t {
+ typedef struct {
    Table* table;
 -  uint32_t row_num;
 +  uint32_t page_num;
 +  uint32_t cell_num;
    bool end_of_table;  // Indicates a position one past the last element
- };
- typedef struct Cursor_t Cursor;
+ } Cursor;
 
-+enum NodeType_t { NODE_INTERNAL, NODE_LEAF };
-+typedef enum NodeType_t NodeType;
++typedef enum { NODE_INTERNAL, NODE_LEAF } NodeType;
 +
 +/*
 + * Common Node Header Layout

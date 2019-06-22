@@ -21,12 +21,11 @@ Those are the behaviors we're going to implement now. Later, we will also want t
 Without further ado, here's the `Cursor` type:
 
 ```diff
-+struct Cursor_t {
++typedef struct {
 +  Table* table;
 +  uint32_t row_num;
 +  bool end_of_table;  // Indicates a position one past the last element
-+};
-+typedef struct Cursor_t Cursor;
++} Cursor;
 ```
 
 Given our current table data structure, all you need to identify a location in a table is the row number.
@@ -124,16 +123,14 @@ Alright, that's it! Like I said, this was a shorter refactor that should help us
 
 Here's the complete diff to this part:
 ```diff
-@@ -78,6 +78,13 @@ struct Table_t {
- };
- typedef struct Table_t Table;
+@@ -78,6 +78,13 @@ struct {
+ } Table;
 
-+struct Cursor_t {
++typedef struct {
 +  Table* table;
 +  uint32_t row_num;
 +  bool end_of_table; // Indicates a position one past the last element
-+};
-+typedef struct Cursor_t Cursor;
++} Cursor;
 +
  void print_row(Row* row) {
      printf("(%d, %s, %s)\n", row->id, row->username, row->email);

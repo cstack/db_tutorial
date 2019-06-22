@@ -40,18 +40,17 @@ To make this easier, we're going to make an abstraction called the pager. We ask
 The Pager accesses the page cache and the file. The Table object makes requests for pages through the pager:
 
 ```diff
-+struct Pager_t {
++typedef struct {
 +  int file_descriptor;
 +  uint32_t file_length;
 +  void* pages[TABLE_MAX_PAGES];
-+};
-+typedef struct Pager_t Pager;
++} Pager;
 +
- struct Table_t {
+ typedef struct {
 -  void* pages[TABLE_MAX_PAGES];
 +  Pager* pager;
    uint32_t num_rows;
- };
+ } Table;
 ```
 
 I'm renaming `new_table()` to `db_open()` because it now has the effect of opening a connection to the database. By opening a connection, I mean:
@@ -336,19 +335,17 @@ Until then!
  const uint32_t ROWS_PER_PAGE = PAGE_SIZE / ROW_SIZE;
  const uint32_t TABLE_MAX_ROWS = ROWS_PER_PAGE * TABLE_MAX_PAGES;
 
-+struct Pager_t {
++typedef struct {
 +  int file_descriptor;
 +  uint32_t file_length;
 +  void* pages[TABLE_MAX_PAGES];
-+};
-+typedef struct Pager_t Pager;
++} Pager;
 +
- struct Table_t {
+ typedef struct {
    uint32_t num_rows;
 -  void* pages[TABLE_MAX_PAGES];
 +  Pager* pager;
- };
- typedef struct Table_t Table;
+ } Table;
 
 @@ -84,32 +94,81 @@ void deserialize_row(void *source, Row* destination) {
    memcpy(&(destination->email), source + EMAIL_OFFSET, EMAIL_SIZE);

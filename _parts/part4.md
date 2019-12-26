@@ -26,7 +26,7 @@ describe 'database' do
     raw_output.split("\n")
   end
 
-  it 'inserts and retreives a row' do
+  it 'inserts and retrieves a row' do
     result = run_script([
       "insert 1 user1 person1@example.com",
       "select",
@@ -404,7 +404,7 @@ And we added tests:
 +    raw_output.split("\n")
 +  end
 +
-+  it 'inserts and retreives a row' do
++  it 'inserts and retrieves a row' do
 +    result = run_script([
 +      "insert 1 user1 person1@example.com",
 +      "select",

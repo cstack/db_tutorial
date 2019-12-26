@@ -219,7 +219,7 @@ I'm going to use [strtok()](http://www.cplusplus.com/reference/cstring/strtok/) 
    }
 ```
 
-Calling `strtok` successively on the the input buffer breaks it into substrings by inserting a null character whenever it reaches a delimiter (space, in our case). It returns a pointer to the start of the substring.
+Calling `strtok` successively on the input buffer breaks it into substrings by inserting a null character whenever it reaches a delimiter (space, in our case). It returns a pointer to the start of the substring.
 
 We can call [strlen()](http://www.cplusplus.com/reference/cstring/strlen/) on each text value to see if it's too long.
 

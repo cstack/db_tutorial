@@ -1,20 +1,20 @@
 ---
-title: Part 13 - Updating Parent Node After a Split
+title: 제13 장 - 분할 후 부모 노드 갱신
 date: 2017-11-26
 ---
 
-For the next step on our epic b-tree implementation journey, we're going to handle fixing up the parent node after splitting a leaf. I'm going to use the following example as a reference:
+B-트리 구현 여정의 다음 단계로, 단말 노드 분할 후 부모 노드를 갱신하는 작업을 진행하겠습니다. 다음 예제를 참조하여 진행하겠습니다.
 
-{% include image.html url="assets/images/updating-internal-node.png" description="Example of updating internal node" %}
+{% include image.html url="assets/images/updating-internal-node.png" description="내부 노드 갱신의 예" %}
 
-In this example, we add the key "3" to the tree. That causes the left leaf node to split. After the split we fix up the tree by doing the following:
+이 예에서는 키 "3" 을 트리에 추가합니다. 키 추가로 왼쪽 단말 노드는 분할됩니다. 분할 후 다음 절차를 수행하여  트리를 갱신합니다.
 
-1. Update the first key in the parent to be the maximum key in the left child ("3")
-2. Add a new child pointer / key pair after the updated key
-  - The new pointer points to the new child node
-  - The new key is the maximum key in the new child node ("5")
-
-So first things first, replace our stub code with two new function calls: `update_internal_node_key()` for step 1 and `internal_node_insert()` for step 2
+1. 부모 노드의 첫 번째 키를 왼쪽 자식 노드의 최대 키값("3")으로 갱신합니다.
+2. 갱신된 키 뒤에 새로운 자식 포인터 / 키 쌍 추가합니다.
+  - 새로운 자식 포인터는 새로운 자식 노드를 가리킵니다.
+  - 새 키는 새 자식 노드의 최대 키값("5")입니다.
+  
+무엇보다 먼저, 스텁 코드를 두 가지 새로운 함수 호출로 교체합니다. `update_internal_node_key()` 는 1번 절차, `internal_node_insert()` 는 2번 절차에 해당합니다.
 
 
 ```diff
@@ -47,7 +47,7 @@ So first things first, replace our stub code with two new function calls: `updat
  }
 ```
 
-In order to get a reference to the parent, we need to start recording in each node a pointer to its parent node.
+부모 노드에 대한 참조를 얻기 위해, 각 노드의 부모 포인터 필드가 부모 노드를 가리키도록 설정해야 합니다.
 
 ```diff
 +uint32_t* node_parent(void* node) { return node + PARENT_POINTER_OFFSET; }
@@ -62,7 +62,7 @@ In order to get a reference to the parent, we need to start recording in each no
  }
 ```
 
-Now we need to find the affected cell in the parent node. The child doesn't know its own page number, so we can't look for that. But it does know its own maximum key, so we can search the parent for that key.
+이제 부모 노드에서 갱신될 셀을 찾아야 합니다. 자식 노드는 자신의 페이지 번호를 알지 못하므로, 이를 이용해서 갱신될 셀을 찾을 수는 없습니다. 하지만 자신이 갖는 최대 키값은 알고 있기 때문에, 최대 키를 이용해서 부모 노드에서 갱신될 셀의 위치를 찾을 수 있습니다.
 
 ```diff
 +void update_internal_node_key(void* node, uint32_t old_key, uint32_t new_key) {
@@ -71,23 +71,23 @@ Now we need to find the affected cell in the parent node. The child doesn't know
  }
 ```
 
-Inside `internal_node_find_child()` we'll reuse some code we already have for finding a key in an internal node. Refactor `internal_node_find()` to use the new helper method.
+`internal_node_find_child()` 내부에서는 내부 노드에서 키를 찾는데 사용하던 코드를 재사용 하겠습니다. 새로운 헬퍼 함수를 사용해서 `internal_node_find()` 의 개선도 진행합니다.
 
 ```diff
 -Cursor* internal_node_find(Table* table, uint32_t page_num, uint32_t key) {
 -  void* node = get_page(table->pager, page_num);
 +uint32_t internal_node_find_child(void* node, uint32_t key) {
 +  /*
-+  Return the index of the child which should contain
-+  the given key.
++  주어진 키를 포함하는 자식 노드의
++  인덱스를 반환합니다.
 +  */
 +
    uint32_t num_keys = *internal_node_num_keys(node);
  
--  /* Binary search to find index of child to search */
-+  /* Binary search */
+-  /* 이진 탐색으로 탐색할 자식의 인덱스를 찾습니다. */
++  /* 이진 탐색 */
    uint32_t min_index = 0;
-   uint32_t max_index = num_keys; /* there is one more child than key */
+   uint32_t max_index = num_keys; /* 키 개수 + 1 개의 자식 노드가 있습니다. */
  
 @@ -386,7 +394,14 @@ Cursor* internal_node_find(Table* table, uint32_t page_num, uint32_t key) {
      }
@@ -107,13 +107,13 @@ Inside `internal_node_find_child()` we'll reuse some code we already have for fi
      case NODE_LEAF:
 ```
 
-Now we get to the heart of this article, implementing `internal_node_insert()`. I'll explain it in pieces.
+이제 이번 장의 핵심인 `internal_node_insert()` 를 구현합니다. 한 부분 씩 설명하겠습니다.
 
 ```diff
 +void internal_node_insert(Table* table, uint32_t parent_page_num,
 +                          uint32_t child_page_num) {
 +  /*
-+  Add a new child/key pair to parent that corresponds to child
++  새로운 자식/키 쌍을 적절한 위치에 추가합니다.
 +  */
 +
 +  void* parent = get_page(table->pager, parent_page_num);
@@ -130,11 +130,11 @@ Now we get to the heart of this article, implementing `internal_node_insert()`. 
 +  }
 ```
 
-The index where the new cell (child/key pair) should be inserted depends on the maximum key in the new child. In the example we looked at, `child_max_key` would be 5 and `index` would be 1.
+새로운 셀(자식/키 쌍)이 삽입되어야 할 인덱스는 새로운 자식 노드의 최대 키에 따라 달라집니다. 위의 예를 보면, `child_max_key` 는 5가 되고 `index` 는 1이 됩니다.
 
-If there's no room in the internal node for another cell, throw an error. We'll implement that later.
+내부 노드에 새 셀을 삽입할 공간이 없다면 에러를 발생합니다. 그 부분은 나중에 구현하겠습니다.
 
-Now let's look at the rest of the function:
+이제 함수의 나머지 부분을 살펴보겠습니다.
 
 ```diff
 +
@@ -142,13 +142,13 @@ Now let's look at the rest of the function:
 +  void* right_child = get_page(table->pager, right_child_page_num);
 +
 +  if (child_max_key > get_node_max_key(right_child)) {
-+    /* Replace right child */
++    /* 오른쪽 자식 교체 */
 +    *internal_node_child(parent, original_num_keys) = right_child_page_num;
 +    *internal_node_key(parent, original_num_keys) =
 +        get_node_max_key(right_child);
 +    *internal_node_right_child(parent) = child_page_num;
 +  } else {
-+    /* Make room for the new cell */
++    /* 새로운 셀을 위한 공간 생성 */
 +    for (uint32_t i = original_num_keys; i > index; i--) {
 +      void* destination = internal_node_cell(parent, i);
 +      void* source = internal_node_cell(parent, i - 1);
@@ -160,24 +160,24 @@ Now let's look at the rest of the function:
 +}
 ```
 
-Because we store the rightmost child pointer separately from the rest of the child/key pairs, we have to handle things differently if the new child is going to become the rightmost child.
+우리는 가장 오른쪽의 자식 포인터를 나머지 자식/키 쌍 들과 분리하여 저장했기 때문에, 새로운 자식이 가장 오른쪽 자식이 되는 경우를 다르게 처리해 줘야 합니다.
 
-In our example, we would get into the `else` block. First we make room for the new cell by shifting other cells one space to the right. (Although in our example there are 0 cells to shift)
+우리의 예는 `else` 블록으로 분기합니다. 가장 먼저 다른 셀들을 오른쪽으로 한 칸씩 옮겨 새로운 셀을 위한 공간을 만듭니다. (하지만 예제에서 이동이 필요한 셀들은 없습니다.)
 
-Next, we write the new child pointer and key into the cell determined by `index`.
+다음으로, 새로운 자식 포인터와 키 쌍을 `index` 로 결정된 셀에 저장합니다. 
 
-To reduce the size of testcases needed, I'm hardcoding `INTERNAL_NODE_MAX_CELLS` for now
+테스트 케이스 크기를 줄이기 위해 `INTERNAL_NODE_MAX_CELLS` 을 하드코딩하여 설정하겠습니다.
 
 ```diff
 @@ -126,6 +126,8 @@ const uint32_t INTERNAL_NODE_KEY_SIZE = sizeof(uint32_t);
  const uint32_t INTERNAL_NODE_CHILD_SIZE = sizeof(uint32_t);
  const uint32_t INTERNAL_NODE_CELL_SIZE =
      INTERNAL_NODE_CHILD_SIZE + INTERNAL_NODE_KEY_SIZE;
-+/* Keep this small for testing */
++/* 테스트를 위해 작게 설정했습니다. */
 +const uint32_t INTERNAL_NODE_MAX_CELLS = 3;
 ```
 
-Speaking of tests, our large-dataset test gets past our old stub and gets to our new one:
+테스트 결과, 우리의 대량 데이터 테스트는 오래된 스텁 코드를 통과하여 새로운 스텁 코드 출력을 얻게 됩니다.
 
 ```diff
 @@ -65,7 +65,7 @@ describe 'database' do
@@ -189,9 +189,9 @@ Speaking of tests, our large-dataset test gets past our old stub and gets to our
      ])
 ```
 
-Very satisfying, I know.
+매우 만족스럽습니다.
 
-I'll add another test that prints a four-node tree. Just so we test more cases than sequential ids, this test will add records in a pseudorandom order.
+4개 단말 노드 트리를 출력하는 또 다른 테스트를 추가하겠습니다. 이 테스트는 무작위로 추출된 순서의 레코드를 삽입해서 순차적인 삽입 보다 많은 경우를 테스트합니다.
 
 ```diff
 +  it 'allows printing out the structure of a 4-leaf-node btree' do
@@ -232,7 +232,7 @@ I'll add another test that prints a four-node tree. Just so we test more cases t
 +    result = run_script(script)
 ```
 
-As-is, it will output this:
+출력은 다음과 같습니다.
 
 ```
 - internal (size 3)
@@ -276,7 +276,7 @@ As-is, it will output this:
 db >
 ```
 
-Look carefully and you'll spot a bug:
+잘 보면 버그가 보입니다.
 ```
     - 5
     - 6
@@ -284,9 +284,9 @@ Look carefully and you'll spot a bug:
   - key 1
 ```
 
-The key there should be 7, not 1!
+키는 1이 아닌 7이어야 합니다!
 
-After a bunch of debugging, I discovered this was due to some bad pointer arithmetic.
+여러 번의 디버깅 끝에, 필자는 잘못된 포인터 산술 연산이 원인임 찾아냈습니다.
 
 ```diff
  uint32_t* internal_node_key(void* node, uint32_t key_num) {
@@ -295,8 +295,8 @@ After a bunch of debugging, I discovered this was due to some bad pointer arithm
  }
 ```
 
-`INTERNAL_NODE_CHILD_SIZE` is 4. My intention here was to add 4 bytes to the result of `internal_node_cell()`, but since `internal_node_cell()` returns a `uint32_t*`, this it was actually adding `4 * sizeof(uint32_t)` bytes. I fixed it by casting to a `void*` before doing the arithmetic.
+`INTERNAL_NODE_CHILD_SIZE` 는 4입니다. 필자의 의도는 `internal_node_cell()` 의 결과에 4 바이트를 더하는 것입니다. 하지만 `internal_node_cell()` 는 `uint32_t*` 를 반환하므로 `4 * sizeof(uint32_t)` 가 더해지게 됩니다. 산술 연산 전에 `void*` 로 캐스팅하여 문제를 해결했습니다.
 
-NOTE! [Pointer arithmetic on void pointers is not part of the C standard and may not work with your compiler](https://stackoverflow.com/questions/3523145/pointer-arithmetic-for-void-pointer-in-c/46238658#46238658). I may do an article in the future on portability, but I'm leaving my void pointer arithmetic for now.
+주의! [void 포인터의 산술 연산을 C 표준이 아니므로 컴파일러에 따라 작동하지 않을 수도 있습니다.](https://stackoverflow.com/questions/3523145/pointer-arithmetic-for-void-pointer-in-c/46238658#46238658) 향후에 이식 관련된 글을 쓰게 될 것이니, 지금은 void 포인터 연산으로 남겨 두겠습니다.
 
-Alright. One more step toward a fully-operational btree implementation. The next step should be splitting internal nodes. Until then!
+좋습니다. 완전완 B-트리 구현을 위해 한 걸음 더 나아갔습니다. 다음 단계는 내부 노드를 분할하는 것입니다. 그럼 다음 장에서 뵙겠습니다. 

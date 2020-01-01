@@ -1,9 +1,9 @@
 ---
-title: Part 12 - Scanning a Multi-Level B-Tree
+title: 제12 장 - 다중 레벨 B-Tree 순회
 date: 2017-11-11
 ---
 
-We now support constructing a multi-level btree, but we've broken `select` statements in the process. Here's a test case that inserts 15 rows and then tries to print them.
+이제 다중 레벨 B-트리를 만들 수 있게 되었습니다. 하지만 그 과정에서 우리의 `select` 문이 망가졌습니다. 다음은 15개 행을 삽입한 후 출력을 시도하는 테스트 케이스입니다.
 
 ```diff
 +  it 'prints all rows in a multi-level tree' do
@@ -36,7 +36,7 @@ We now support constructing a multi-level btree, but we've broken `select` state
 +  end
 ```
 
-But when we run that test case right now, what actually happens is:
+하지만 테스트 케이스를 실행했을 때 실제로 출력되는 것은 다음과 같습니다.
 
 ```
 db > select
@@ -44,11 +44,11 @@ db > select
 Executed.
 ```
 
-That's weird. It's only printing one row, and that row looks corrupted (notice the id doesn't match the username).
+결과가 이상합니다. 한 행만 출력하며, 그 행조차 손상(ID와 사용자 ID의 불일치) 되었습니다.
 
-The weirdness is because `execute_select()` begins at the start of the table, and our current implementation of `table_start()` returns cell 0 of the root node. But the root of our tree is now an internal node which doesn't contain any rows. The data that was printed must have been left over from when the root node was a leaf. `execute_select()` should really return cell 0 of the leftmost leaf node.
+이상한 결과는 `execute_select()` 가 테이블의 처음에서 시작되고, 또 현재 `table_start()` 가 루트 노드의 0번 셀을 반환하도록 구현되어 발생합니다. 하지만 루트 노드는 아무행도 갖지 않는 내부 노드입니다. 따라서 루트 노드가 단말 노드였을 때 남겨진 것이 출력되는 것으로 보입니다. `execute_select()` 는 가장 왼쪽 단말 노드의 0번 셀을 제대로 반환해야 합니다.
 
-So get rid of the old implementation:
+따라서 기존 구현은 제거합니다.
 
 ```diff
 -Cursor* table_start(Table* table) {
@@ -65,7 +65,7 @@ So get rid of the old implementation:
 -}
 ```
 
-And add a new implementation that searches for key 0 (the minimum possible key). Even if key 0 does not exist in the table, this method will return the position of the lowest id (the start of the left-most leaf node).
+그리고 키 0(최소 키)을 찾는 새로운 구현을 추가합니다. 키 0이 테이블에 없어도, 이 함수는 가장 작은 id(가장 왼쪽 단말 노드의 시작)의 위치를 반환합니다.
 
 ```diff
 +Cursor* table_start(Table* table) {
@@ -79,7 +79,7 @@ And add a new implementation that searches for key 0 (the minimum possible key).
 +}
 ```
 
-With those changes, it still only prints out one node's worth of rows:
+변경작업에도 불구하고 한 노드의 행들만 출력됩니다.
 
 ```
 db > select
@@ -94,13 +94,13 @@ Executed.
 db >
 ```
 
-With 15 entries, our btree consists of one internal node and two leaf nodes, which looks something like this:
+15개 행을 갖는 B-트리는 하나의 내부 노드와 두 개의 단말 노드로 구성되며, 다음과 같은 구조를 갖습니다.
 
-{% include image.html url="assets/images/btree3.png" description="structure of our btree" %}
+{% include image.html url="assets/images/btree3.png" description="우리의 B-트리 구조" %}
 
-To scan the entire table, we need to jump to the second leaf node after we reach the end of the first. To do that, we're going to save a new field in the leaf node header called "next_leaf", which will hold the page number of the leaf's sibling node on the right. The rightmost leaf node will have a `next_leaf` value of 0 to denote no sibling (page 0 is reserved for the root node of the table anyway).
+전체 테이블을 스캔하기 위해서는 첫 단말 노드의 끝에 도달한 후 두 번째 단말 노드로 이동해야 합니다. 이를 위해, 단말 노드 헤더에 "next_leaf" 필드를 추가하겠습니다. 이 필드는 오른쪽 형제 노드의 페이지 번호를 갖습니다. 가장 오른쪽의 단말 노드는 형제가 없음을 표시하기 위해 0의 `next_leaf` 값(페이지 0은 테이블의 루트 노드 용으로 예약된 값)을 갖습니다.
 
-Update the leaf node header format to include the new field:
+단말 노드 헤더 형식을 수정하여 새로운 필드를 포함시킵니다.
 
 ```diff
  const uint32_t LEAF_NODE_NUM_CELLS_SIZE = sizeof(uint32_t);
@@ -116,25 +116,25 @@ Update the leaf node header format to include the new field:
  
  ```
 
-Add a method to access the new field:
+새 필드에 접근하는 함수도 추가합니다.
 ```diff
 +uint32_t* leaf_node_next_leaf(void* node) {
 +  return node + LEAF_NODE_NEXT_LEAF_OFFSET;
 +}
 ```
 
-Set `next_leaf` to 0 by default when initializing a new leaf node:
+새 단말 노드를 초기화할 때, 기본적으로 `next_leaf` 를 0으로 설정합니다.
 
 ```diff
 @@ -322,6 +330,7 @@ void initialize_leaf_node(void* node) {
    set_node_type(node, NODE_LEAF);
    set_node_root(node, false);
    *leaf_node_num_cells(node) = 0;
-+  *leaf_node_next_leaf(node) = 0;  // 0 represents no sibling
++  *leaf_node_next_leaf(node) = 0;  // 0 는 형제가 없음을 의미합니다.
  }
 ```
 
-Whenever we split a leaf node, update the sibling pointers. The old leaf's sibling becomes the new leaf, and the new leaf's sibling becomes whatever used to be the old leaf's sibling.
+단말 노드를 분할할 때마다 형제 노드 포인터를 갱신합니다. 기존 단말 노드의 형제 노드는 새로운 단말 노드가 되고, 새 단말 노드의 형제는 기존 노드의 형제였던 노드가 됩니다.
 
 ```diff
 @@ -659,6 +671,8 @@ void leaf_node_split_and_insert(Cursor* cursor, uint32_t key, Row* value) {
@@ -145,7 +145,7 @@ Whenever we split a leaf node, update the sibling pointers. The old leaf's sibli
 +  *leaf_node_next_leaf(old_node) = new_page_num;
 ```
 
-Adding a new field changes a few constants:
+새 필드 추가로 몇 가지 상수 값들이 바뀝니다.
 ```diff
    it 'prints constants' do
      script = [
@@ -164,7 +164,7 @@ Adding a new field changes a few constants:
      ])
 ```
 
-Now whenever we want to advance the cursor past the end of a leaf node, we can check if the leaf node has a sibling. If it does, jump to it. Otherwise, we're at the end of the table.
+이제 단말 노드의 끝에서 커서를 진행하는 경우, 단말 노드가 형제 노드를 갖는지 확인해야 합니다. 형제가 있으면 이동하고, 없으면 테이블의 끝임을 표시합니다.
 
 ```diff
 @@ -428,7 +432,15 @@ void cursor_advance(Cursor* cursor) {
@@ -172,10 +172,10 @@ Now whenever we want to advance the cursor past the end of a leaf node, we can c
    cursor->cell_num += 1;
    if (cursor->cell_num >= (*leaf_node_num_cells(node))) {
 -    cursor->end_of_table = true;
-+    /* Advance to next leaf node */
++    /* 다음 단말 노드로 진행 */
 +    uint32_t next_page_num = *leaf_node_next_leaf(node);
 +    if (next_page_num == 0) {
-+      /* This was rightmost leaf */
++      /* 최우측 단말 노드 */
 +      cursor->end_of_table = true;
 +    } else {
 +      cursor->page_num = next_page_num;
@@ -185,7 +185,7 @@ Now whenever we want to advance the cursor past the end of a leaf node, we can c
  }
 ```
 
-After those changes, we actually print 15 rows...
+변경을 통해 실제로 15개의 행이 출력이 되는데...
 ```
 db > select
 (1, user1, person1@example.com)
@@ -207,12 +207,12 @@ Executed.
 db >
 ```
 
-...but one of them looks corrupted
+...한 행이 이상합니다.
 ```
 (1919251317, 14, on14@example.com)
 ```
 
-After some debugging, I found out it's because of a bug in how we split leaf nodes:
+디버깅을 통해, 필자는 노드 분할 과정에서 버그 때문임을 찾아냈습니다.
 
 ```diff
 @@ -676,7 +690,9 @@ void leaf_node_split_and_insert(Cursor* cursor, uint32_t key, Row* value) {
@@ -228,13 +228,13 @@ After some debugging, I found out it's because of a bug in how we split leaf nod
      } else {
 ```
 
-Remember that each cell in a leaf node consists of first a key then a value:
+단말 노드의 각 셀은 키, 그다음 값으로 구성되어 있음을 기억하기 바랍니다.
 
-{% include image.html url="assets/images/leaf-node-format.png" description="Original leaf node format" %}
+{% include image.html url="assets/images/leaf-node-format.png" description="단말 노드 형식" %}
 
-We were writing the new row (value) into the start of the cell, where the key should go. That means part of the username was going into the section for id (hence the crazy large id).
+우리는 새로운 행(값)을 키가 저장되어야 할 셀의 시작 부분에 쓰고 있었습니다. 즉, 사용자 이름의 일부가 id 구역에 쓰인 것입니다. (따라서 엄청나게 큰 id가 출력 되었습니다.)
 
-After fixing that bug, we finally print out the entire table as expected:
+버그를 고친 후, 마침내 예상대로 테이블 전체를 출력합니다.
 
 ```
 db > select
@@ -257,6 +257,6 @@ Executed.
 db >
 ```
 
-Whew! One bug after another, but we're making progress.
+휴! 버그가 속속 생기지만 그래도 잘 진행되고 있습니다. 
 
-Until next time.
+그럼 다음 장에서 뵙겠습니다.

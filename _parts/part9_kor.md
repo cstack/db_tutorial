@@ -1,11 +1,11 @@
 ---
-title: Part 9 - Binary Search and Duplicate Keys
+title: 제9 장 - 이진 탐색 및 중복 키
 date: 2017-10-01
 ---
 
-Last time we noted that we're still storing keys in unsorted order. We're going to fix that problem, plus detect and reject duplicate keys.
+지난 장에서 여전히 키가 정렬되지 않은 순서대로 저장되고 있음을 확인했습니다. 이번 장에서는 그 문제를 해결하며, 추가로 중복된 키를 검사하고 거부하도록 합니다.
 
-Right now, our `execute_insert()` function always chooses to insert at the end of the table. Instead, we should search the table for the correct place to insert, then insert there. If the key already exists there, return an error.
+현재, `execute_insert()` 함수는 항상 테이블 끝에 삽입을 수행합니다. 끝에 삽입하는 대신에, 삽입할 올바른 위치를 찾고, 해당 위치에 삽입하도록 해야 합니다. 만약 키가 이미 있는 경우 에러를 반환해야 합니다.
 
 ```diff
 ExecuteResult execute_insert(Statement* statement, Table* table) {
@@ -31,7 +31,7 @@ ExecuteResult execute_insert(Statement* statement, Table* table) {
    leaf_node_insert(cursor, row_to_insert->id, row_to_insert);
 ```
 
-We don't need the `table_end()` function anymore.
+더 이상 `table_end()` 함수는 필요하지 않습니다.
 
 ```diff
 -Cursor* table_end(Table* table) {
@@ -48,13 +48,13 @@ We don't need the `table_end()` function anymore.
 -}
 ```
 
-We'll replace it with a method that searches the tree for a given key.
+주어진 키로 트리를 탐색하는 함수로 대체합니다.
 
 ```diff
 +/*
-+Return the position of the given key.
-+If the key is not present, return the position
-+where it should be inserted
++주어진 키를 갖는 노드의 위치를 반환합니다.
++키를 갖는 노드가 없는 경우, 
++삽입될 위치를 반환합니다.
 +*/
 +Cursor* table_find(Table* table, uint32_t key) {
 +  uint32_t root_page_num = table->root_page_num;
@@ -69,7 +69,7 @@ We'll replace it with a method that searches the tree for a given key.
 +}
 ```
 
-I'm stubbing out the branch for internal nodes because we haven't implemented internal nodes yet. We can search the leaf node with binary search.
+아직 내부 노드를 구현하지 않았기 때문에 내부 노드를 위한 분기문은 스텁을 사용합니다. 리프 노드에 대해서는 이진 탐색을 수행합니다.
 
 ```diff
 +Cursor* leaf_node_find(Table* table, uint32_t page_num, uint32_t key) {
@@ -80,7 +80,7 @@ I'm stubbing out the branch for internal nodes because we haven't implemented in
 +  cursor->table = table;
 +  cursor->page_num = page_num;
 +
-+  // Binary search
++  // 이진 탐색
 +  uint32_t min_index = 0;
 +  uint32_t one_past_max_index = num_cells;
 +  while (one_past_max_index != min_index) {
@@ -102,12 +102,12 @@ I'm stubbing out the branch for internal nodes because we haven't implemented in
 +}
 ```
 
-This will either return
-- the position of the key,
-- the position of another key that we'll need to move if we want to insert the new key, or
-- the position one past the last key
+이 함수는 다음 값들 중 하나를 반환합니다.
+- 키의 위치
+- 새로운 키 삽입 시 이동이 필요한 또 다른 키의 위치
+- 마지막 키 다음 위치
 
-Since we're now checking node type, we need functions to get and set that value in a node.
+이제 노드의 유형을 확인하기 때문에, 노드에서 유형 값을 가져오고 설정할 수 있는 함수가 필요합니다.
 
 ```diff
 +NodeType get_node_type(void* node) {
@@ -121,9 +121,9 @@ Since we're now checking node type, we need functions to get and set that value 
 +}
 ```
 
-We have to cast to `uint8_t` first to ensure it's serialized as a single byte.
+단일 바이트로 저장되도록, `uint8_t` 로 먼저 캐스팅해야 합니다.
 
-We also need to initialize node type.
+또한 노드 유형을 초기화 합니다.
 
 ```diff
 -void initialize_leaf_node(void* node) { *leaf_node_num_cells(node) = 0; }
@@ -133,7 +133,7 @@ We also need to initialize node type.
 +}
 ```
 
-Lastly, we need to make and handle a new error code.
+마지막으로, 새로운 에러 코드를 만들어 처리합니다.
 
 ```diff
 -enum ExecuteResult_t { EXECUTE_SUCCESS, EXECUTE_TABLE_FULL };
@@ -156,7 +156,7 @@ Lastly, we need to make and handle a new error code.
          break;
 ```
 
-With these changes, our test can change to check for sorted order:
+변경 작업으로, 테스트가 정렬된 순서를 확인하도록 변경합니다.
 
 ```diff
        "db > Executed.",
@@ -173,7 +173,7 @@ With these changes, our test can change to check for sorted order:
    end
 ```
 
-And we can add a new test for duplicate keys:
+그리고 키 중복 상황에 대한 테스트를 추가합니다.
 
 ```diff
 +  it 'prints an error message if there is a duplicate id' do
@@ -194,4 +194,4 @@ And we can add a new test for duplicate keys:
 +  end
 ```
 
-That's it! Next up: implement splitting leaf nodes and creating internal nodes.
+끝났습니다! 다음 장: 단말 노드 분할 및 새 내부 노드 생성 구현

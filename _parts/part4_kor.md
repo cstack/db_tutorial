@@ -1,13 +1,13 @@
 ---
-title: Part 4 - Our First Tests (and Bugs)
+title: 제4 장 - 첫 테스트 (그리고 버그)
 date: 2017-09-03
 ---
 
-We've got the ability to insert rows into our database and to print out all rows. Let's take a moment to test what we've got so far.
+우리는 데이터베이스에 행을 삽입하고 모든 행을 출력해 볼 수 있게 되었습니다. 여기서, 지금까지 해온 것들을 테스트해보는 시간을 갖겠습니다.
 
-I'm going to use [rspec](http://rspec.info/) to write my tests because I'm familiar with it, and the syntax is fairly readable.
+필자가 사용에 익숙하기도 하며, 구문의 가독성도 좋은 [rspec](http://rspec.info/)을 사용하여 테스트를 진행하겠습니다.
 
-I'll define a short helper to send a list of commands to our database program then make assertions about the output:
+먼저, 데이터베이스에 명령 목록을 보내도록 간단한 헬퍼를 정의하고 출력에 대한 어설션을 만듭니다.
 
 ```ruby
 describe 'database' do
@@ -42,7 +42,8 @@ describe 'database' do
 end
 ```
 
-This simple test makes sure we get back what we put in. And indeed it passes:
+이 간단한 테스트는 우리가 넣은 값이 제대로 출력됨을 확인 시켜 줄 것입니다. 그리고 제대로 작동하여 테스트를 통과합니다.
+
 ```command-line
 bundle exec rspec
 .
@@ -51,7 +52,7 @@ Finished in 0.00871 seconds (files took 0.09506 seconds to load)
 1 example, 0 failures
 ```
 
-Now it's feasible to test inserting a large number of rows into the database:
+이제 데이터베이스에 많은 수의 행을 삽입해보는 테스트가 가능해집니다.
 ```ruby
 it 'prints error message when table is full' do
   script = (1..1401).map do |i|
@@ -63,7 +64,7 @@ it 'prints error message when table is full' do
 end
 ```
 
-Running tests again...
+다시 테스트를 진행합니다...
 ```command-line
 bundle exec rspec
 ..
@@ -72,9 +73,9 @@ Finished in 0.01553 seconds (files took 0.08156 seconds to load)
 2 examples, 0 failures
 ```
 
-Sweet, it works! Our db can hold 1400 rows right now because we set the maximum number of pages to 100, and 14 rows can fit in a page.
+잘 작동합니다! 최대 페이지 수가 100이며 각각 14 개의 행을 적재할 수 있으므로, 현재 우리의 데이터베이스는 1400개의 행을 보유할 수 있습니다.
 
-Reading through the code we have so far, I realized we might not handle storing text fields correctly. Easy to test with this example:
+지금까지 진행된 코드를 살펴보던 중, 텍스트 필드 저장을 제대로 처리하지 못함을 깨달았습니다. 다음 예제로 쉽게 테스트해볼 수 있습니다.
 ```ruby
 it 'allows inserting strings that are the maximum length' do
   long_username = "a"*32
@@ -94,7 +95,7 @@ it 'allows inserting strings that are the maximum length' do
 end
 ```
 
-And the test fails!
+그리고 테스트는 실패합니다!
 ```ruby
 Failures:
 
@@ -108,7 +109,7 @@ Failures:
      # ./spec/main_spec.rb:48:in `block (2 levels) in <top (required)>'
 ```
 
-If we try it ourselves, we'll see that there's some weird characters when we try to print out the row. (I'm abbreviating the long strings):
+직접 실행해 보면, 행을 출력할 때 이상한 문자들이 있음을 알 수 있습니다. (긴 문자열은 줄여썼습니다.)
 ```command-line
 db > insert 1 aaaaa... aaaaa...
 Executed.
@@ -118,7 +119,7 @@ Executed.
 db >
 ```
 
-What's going on? If you take a look at our definition of a Row, we allocate exactly 32 bytes for username and exactly 255 bytes for email. But [C strings](http://www.cprogramming.com/tutorial/c/lesson9.html) are supposed to end with a null character, which we didn't allocate space for. The solution is to allocate one additional byte:
+왜 그럴까요? 행의 정의를 보면, 이름에는 정확히 32 바이트, 이메일에는 255바이트를 할당한 것을 볼 수 있습니다. 그러나 [C 문자열](http://www.cprogramming.com/tutorial/c/lesson9.html) 은 공백으로 끝나게 되어있고, 우리는 공백을 위한 공간을 할당하지 않았습니다. 해결책은 한 바이트를 추가 할당하는 것입니다.
 ```diff
  const uint32_t COLUMN_EMAIL_SIZE = 255;
  typedef struct {
@@ -130,7 +131,7 @@ What's going on? If you take a look at our definition of a Row, we allocate exac
  } Row;
  ```
 
- And indeed that fixes it:
+ 그리고 정말로 문제를 해결합니다.
  ```ruby
  bundle exec rspec
 ...
@@ -139,7 +140,7 @@ Finished in 0.0188 seconds (files took 0.08516 seconds to load)
 3 examples, 0 failures
 ```
 
-We should not allow inserting usernames or emails that are longer than column size. The spec for that looks like this:
+열 크기보다 긴 사용자 이름 또는 이메일을 삽입하는 것 역시 허용해서는 안 됩니다. 초과하는 케이스는 다음과 같습니다.
 ```ruby
 it 'prints error message if strings are too long' do
   long_username = "a"*33
@@ -158,7 +159,7 @@ it 'prints error message if strings are too long' do
 end
 ```
 
-In order to do this we need to upgrade our parser. As a reminder, we're currently using [scanf()](https://linux.die.net/man/3/scanf):
+초과를 방지하기 위해서는 파서를 개선해야 합니다. 참고로, 현재는 [scanf()](https://linux.die.net/man/3/scanf)를 사용하고 있습니다.
 ```c
 if (strncmp(input_buffer->buffer, "insert", 6) == 0) {
   statement->type = STATEMENT_INSERT;
@@ -172,9 +173,9 @@ if (strncmp(input_buffer->buffer, "insert", 6) == 0) {
 }
 ```
 
-But [scanf has some disadvantages](https://stackoverflow.com/questions/2430303/disadvantages-of-scanf). If the string it's reading is larger than the buffer it's reading into, it will cause a buffer overflow and start writing into unexpected places. We want to check the length of each string before we copy it into a `Row` structure. And to do that, we need to divide the input by spaces.
+그러나 [scanf는 몇 가지 약점이 있습니다.](https://stackoverflow.com/questions/2430303/disadvantages-of-scanf) scanf가 읽은 문자열이 입력 버퍼의 크기보다 큰 경우, 버퍼 오버플로우가 발생하여 예기치 않은 위치에 쓰기 작업을 수행합니다. 따라서, 우리는 `Row` 구조체에 각 문자열을 복사하기 전에, 길이를 확인해야 합니다. 이를 위해서는 입력을 공백으로 나눌 필요가 있습니다.
 
-I'm going to use [strtok()](http://www.cplusplus.com/reference/cstring/strtok/) to do that. I think it's easiest to understand if you see it in action:
+[strtok()](http://www.cplusplus.com/reference/cstring/strtok/)를 사용해서 하도록 하겠습니다. 실제로 보면 쉽게 이해할 수 있을 것입니다.
 
 ```diff
 +PrepareResult prepare_insert(InputBuffer* input_buffer, Statement* statement) {
@@ -219,11 +220,11 @@ I'm going to use [strtok()](http://www.cplusplus.com/reference/cstring/strtok/) 
    }
 ```
 
-Calling `strtok` successively on the the input buffer breaks it into substrings by inserting a null character whenever it reaches a delimiter (space, in our case). It returns a pointer to the start of the substring.
+연속적으로 `strtok` 를 호출하면 구분 문자(여기서는 공백에 해당)에 도달할 때마다 입력 버퍼에 null 문자를 삽입하여 하위 문자열로 분리합니다.
 
-We can call [strlen()](http://www.cplusplus.com/reference/cstring/strlen/) on each text value to see if it's too long.
+각 텍스트 값의 길이 초과 여부는 [strlen()](http://www.cplusplus.com/reference/cstring/strlen/)을 호출하여 확인할 수 있습니다.
 
-We can handle the error like we do any other error code:
+다른 에러 코드와 마찬가지로 에러 처리를 할 수 있습니다.
 ```diff
  enum PrepareResult_t {
    PREPARE_SUCCESS,
@@ -244,7 +245,7 @@ We can handle the error like we do any other error code:
      continue;
 ```
 
-Which makes our test pass
+파서 개선 작업은 테스트를 통과하게 만듭니다.
 ```command-line
 bundle exec rspec
 ....
@@ -253,7 +254,7 @@ Finished in 0.02284 seconds (files took 0.116 seconds to load)
 4 examples, 0 failures
 ```
 
-While we're here, we might as well handle one more error case:
+하는 김에, 에러 케이스를 하나 더 처리하겠습니다.
 ```ruby
 it 'prints an error message if id is negative' do
   script = [
@@ -298,11 +299,11 @@ end
          continue;
 ```
 
-Alright, that's enough testing for now. Next is a very important feature: persistence! We're going to save our database to a file and read it back out again.
+이제 테스트는 충분합니다. 다음 장은 매우 중요한 기능입니다. 지속성! 우리는 데이터 베이스를 파일에 저장하고 다시 읽어오도록 만들 것입니다.  
 
-It's gonna be great.
+매우 근사한 작업이 될 것입니다.
 
-Here's the complete diff for this part:
+지금까지 변경된 부분은 다음과 같습니다.
 ```diff
 @@ -22,6 +22,8 @@
 
@@ -386,7 +387,7 @@ Here's the complete diff for this part:
  	printf("Syntax error. Could not parse statement.\n");
  	continue;
 ```
-And we added tests:
+그리고 추가된 테스트들입니다.
 ```diff
 +describe 'database' do
 +  def run_script(commands)

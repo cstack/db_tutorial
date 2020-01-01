@@ -1,15 +1,15 @@
 ---
-title: Part 3 - An In-Memory, Append-Only, Single-Table Database
+title: 제3 장 - 메모리 내, 추가 전용, 단일 테이블 데이터베이스
 date: 2017-09-01
 ---
 
-We're going to start small by putting a lot of limitations on our database. For now, it will:
+데이터베이스에 많은 제한을 두어, 작은 규모로 시작해 보겠습니다. 우선, 다음과 같은 제한을 두겠습니다.
 
-- support two operations: inserting a row and printing all rows
-- reside only in memory (no persistence to disk)
-- support a single, hard-coded table
+- 두 가지 연산 만 지원: 행 삽입 및 모든 행 출력
+- 메모리에만 존재 (디스크에 지속 보존되지 않음) 
+- 하드 코딩 된 단일 테이블만 지원
 
-Our hard-coded table is going to store users and look like this:
+하드 코딩 된 테이블은 사용자를 저장할 것이며, 형태는 다음과 같습니다.
 
 | column   | type         |
 |----------|--------------|
@@ -17,15 +17,15 @@ Our hard-coded table is going to store users and look like this:
 | username | varchar(32)  |
 | email    | varchar(255) |
 
-This is a simple schema, but it gets us to support multiple data types and multiple sizes of text data types.
+단순한 스키마이지만, 여러 데이터 타입과 다양한 크기의 텍스트 데이터 타입을 지원합니다.
 
-`insert` statements are now going to look like this:
+`insert` 문은 다음과 같습니다.
 
 ```
 insert 1 cstack foo@bar.com
 ```
 
-That means we need to upgrade our `prepare_statement` function to parse arguments
+즉, 입력 인자들을 파싱 할 수 있도록  `prepare_statement` 함수를 개선해야 합니다.
 
 ```diff
    if (strncmp(input_buffer->buffer, "insert", 6) == 0) {
@@ -41,7 +41,7 @@ That means we need to upgrade our `prepare_statement` function to parse argument
    if (strcmp(input_buffer->buffer, "select") == 0) {
 ```
 
-We store those parsed arguments into a new `Row` data structure inside the statement object:
+파싱 된 입력 인자들은 새로운 `Row` 데이터 구조체 형태로 statement 객체 내부에 저장됩니다.
 
 ```diff
 +#define COLUMN_USERNAME_SIZE 32
@@ -54,21 +54,21 @@ We store those parsed arguments into a new `Row` data structure inside the state
 +
  typedef struct {
    StatementType type;
-+  Row row_to_insert;  // only used by insert statement
++  Row row_to_insert;  // insert 문에서만 사용됩니다.
  } Statement;
 ```
 
-Now we need to copy that data into some data structure representing the table. SQLite uses a B-tree for fast lookups, inserts and deletes. We'll start with something simpler. Like a B-tree, it will group rows into pages, but instead of arranging those pages as a tree it will arrange them as an array.
+이제 입력 데이터를 테이블을 표현하는 데이터 구조로 복사할 필요가 있습니다. SQLite의 경우 빠른 조회, 삽입 및 삭제를 위해 B-트리를 사용합니다. 우리는 좀 더 간단한 데이터 구조를 사용하여 진행하겠습니다. B-트리와 마찬가지로, 행을 페이지로 그룹화하지만, 페이지들을 트리 형태가 아닌 배열 형태로 처리하겠습니다.
 
-Here's my plan:
+계획은 다음과 같습니다.
 
-- Store rows in blocks of memory called pages
-- Each page stores as many rows as it can fit
-- Rows are serialized into a compact representation with each page
-- Pages are only allocated as needed
-- Keep a fixed-size array of pointers to pages
+- 페이지라는 메모리 블록에 행을 저장합니다.
+- 각 페이지는 최대한 많은 행을 저장합니다.
+- 각 페이지에 행들은 촘촘한 표현 형태로 직렬화되어 저장됩니다.
+- 페이지는 필요한 경우에만 할당됩니다.
+- 페이지는 고정 크기의 포인터 배열로 관리됩니다.
 
-First we'll define the compact representation of a row:
+먼저 행의 촘촘한 표현 형태를 정의합니다.
 ```diff
 +#define size_of_attribute(Struct, Attribute) sizeof(((Struct*)0)->Attribute)
 +
@@ -81,7 +81,7 @@ First we'll define the compact representation of a row:
 +const uint32_t ROW_SIZE = ID_SIZE + USERNAME_SIZE + EMAIL_SIZE;
 ```
 
-This means the layout of a serialized row will look like this:
+즉, 직렬화된 행의 형태는 다음과 같습니다. 
 
 | column   | size (bytes) | offset       |
 |----------|--------------|--------------|
@@ -90,7 +90,7 @@ This means the layout of a serialized row will look like this:
 | email    | 255          | 36           |
 | total    | 291          |              |
 
-We also need code to convert to and from the compact representation.
+촘촘한 표현 형태로 변환하거나 재변환하는 코드도 필요합니다.
 ```diff
 +void serialize_row(Row* source, void* destination) {
 +  memcpy(destination + ID_OFFSET, &(source->id), ID_SIZE);
@@ -105,7 +105,7 @@ We also need code to convert to and from the compact representation.
 +}
 ```
 
-Next, a `Table` structure that points to pages of rows and keeps track of how many rows there are:
+다음은 행의 페이지들을 가리키고 행의 수를 추적관리하는 `Table` 구조체입니다.
 ```diff
 +const uint32_t PAGE_SIZE = 4096;
 +#define TABLE_MAX_PAGES 100
@@ -118,19 +118,19 @@ Next, a `Table` structure that points to pages of rows and keeps track of how ma
 +} Table;
 ```
 
-I'm making our page size 4 kilobytes because it's the same size as a page used in the virtual memory systems of most computer architectures. This means one page in our database corresponds to one page used by the operating system. The operating system will move pages in and out of memory as whole units instead of breaking them up.
+페이지 크기는 대부분의 컴퓨터 구조들이 가상 메모리 시스템에서 사용하는 것과 같은 4 킬로바이트로 만들었습니다. 이점은 우리 데이터베이스의 한 페이지가 운영체제의 한 페이지에 해당함을 의미합니다. 따라서, 운영체제는 페이지를 분할하지 않고 페이지를 메모리 내외로 이동시킬 것입니다.
 
-I'm setting an arbitrary limit of 100 pages that we will allocate. When we switch to a tree structure, our database's maximum size will only be limited by the maximum size of a file. (Although we'll still limit how many pages we keep in memory at once)
+100페이지 할당 제한은 임의로 설정 한 것입니다. 트리구조로 전환하게 되면 데이터베이스의 최대 크기는 파일 최대 크기에 의해서만 제한될 것입니다. (한 번에 메모리에 보관하는 페이지 수는 제한이 될 것입니다.)
 
-Rows should not cross page boundaries. Since pages probably won't exist next to each other in memory, this assumption makes it easier to read/write rows.
+행은 페이지 경계를 넘지 않아야 합니다. 페이지가 메모리에 연속적으로 존재하지 않기 때문에, 행을 좀 더 쉽게 읽고 쓸 수 있게 합니다.
 
-Speaking of which, here is how we figure out where to read/write in memory for a particular row:
+말이 나온 김에, 다음은 읽고 쓸 행의 메모리 위치를 찾는 방법입니다. 
 ```diff
 +void* row_slot(Table* table, uint32_t row_num) {
 +  uint32_t page_num = row_num / ROWS_PER_PAGE;
 +  void* page = table->pages[page_num];
 +  if (page == NULL) {
-+    // Allocate memory only when we try to access page
++    // 페이지에 접근하는 경우 메모리 할당
 +    page = table->pages[page_num] = malloc(PAGE_SIZE);
 +  }
 +  uint32_t row_offset = row_num % ROWS_PER_PAGE;
@@ -139,7 +139,7 @@ Speaking of which, here is how we figure out where to read/write in memory for a
 +}
 ```
 
-Now we can make `execute_statement` read/write from our table structure:
+이제 `execute_statement` 함수에서 우리의 테이블 구조를 읽고 쓰도록 만들 수 있습니다.
 ```diff
 -void execute_statement(Statement* statement) {
 +ExecuteResult execute_insert(Statement* statement, Table* table) {
@@ -178,8 +178,7 @@ Now we can make `execute_statement` read/write from our table structure:
  }
 ```
 
-Lastly, we need to initialize the table, create the respective
-memory release function and handle a few more error cases:
+마지막으로 테이블 초기화 및 메모리 해제 함수를 생성하고 몇 가지 에러 처리를 합니다.
 
 ```diff
 + Table* new_table() {
@@ -231,7 +230,7 @@ memory release function and handle a few more error cases:
  }
  ```
 
- With those changes we can actually save data in our database!
+ 변경을 통해 데이터베이스에 데이터를 저장할 수 있게 되었습니다!
  ```command-line
 ~ ./db
 db > insert 1 cstack foo@bar.com
@@ -248,11 +247,11 @@ db > .exit
 ~
 ```
 
-Now would be a great time to write some tests, for a couple reasons:
-- We're planning to dramatically change the data structure storing our table, and tests would catch regressions.
-- There are a couple edge cases we haven't tested manually (e.g. filling up the table)
+이쯤에서, 테스트를 수행해보는 것이 좋을 것 같습니다. 여기서 테스트를 수행하는 것에는 몇 가지 이유가 있습니다. 
+- 앞으로 테이블에 저장되는 데이터 구조를 극적으로 변경할 것이며, 테스트를 통해 회귀 테스트 케이스를 얻는 것이 큰 도움이 될 것입니다.
+- 수동으로 테스트하지 못할 몇 가지 엣지 케이스가 존재합니다. (예: 테이블 가득 채우기)
 
-We'll address those issues in the next part. For now, here's the complete diff from this part:
+다음 장에서 이 사항들을 다루어 보겠습니다. 지금까지 변경된 부분은 다음과 같습니다.
 ```diff
 @@ -2,6 +2,7 @@
  #include <stdio.h>
@@ -290,7 +289,7 @@ We'll address those issues in the next part. For now, here's the complete diff f
 +
 +typedef struct {
 +  StatementType type;
-+  Row row_to_insert; //only used by insert statement
++  Row row_to_insert; // insert 문에서만 사용됩니다.
 +} Statement;
 +
 +#define size_of_attribute(Struct, Attribute) sizeof(((Struct*)0)->Attribute)
@@ -333,7 +332,7 @@ We'll address those issues in the next part. For now, here's the complete diff f
 +  uint32_t page_num = row_num / ROWS_PER_PAGE;
 +  void *page = table->pages[page_num];
 +  if (page == NULL) {
-+     // Allocate memory only when we try to access page
++     // 페이지에 접근하는 경우 메모리 할당
 +     page = table->pages[page_num] = malloc(PAGE_SIZE);
 +  }
 +  uint32_t row_offset = row_num % ROWS_PER_PAGE;

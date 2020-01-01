@@ -1,41 +1,41 @@
 ---
-title: Part 8 - B-Tree Leaf Node Format
+title: 제8 장 - B-트리 단말 노드 형식
 date: 2017-09-25
 ---
 
-We're changing the format of our table from an unsorted array of rows to a B-Tree. This is a pretty big change that is going to take multiple articles to implement. By the end of this article, we'll define the layout of a leaf node and support inserting key/value pairs into a single-node tree. But first, let's recap the reasons for switching to a tree structure.
+정렬되지 않은 행 배열에서 B-트리로 테이블의 형식을 변경하고 있습니다. 이것은 여러 장으로 다뤄질 만큼 굉장히 큰 변경 작업입니다. 이번 장을 통해, 단말 노드의 형식을 정의하고 단일 노드 트리에 대한 키/값 쌍 삽입을 구현하게 됩니다. 먼저, 트리 구조로 바꾸는 이유를 상기해보며 시작하겠습니다.
 
-## Alternative Table Formats
+## 다양한 테이블 형식들
 
-With the current format, each page stores only rows (no metadata) so it is pretty space efficient. Insertion is also fast because we just append to the end. However, finding a particular row can only be done by scanning the entire table. And if we want to delete a row, we have to fill in the hole by moving every row that comes after it.
+현재 형식을 사용하면, 각 페이지가 행들만을 저장하기 때문에 (메타데이터는 저장하지 않음) 공간 효율성이 매우 높습니다. 삽입 연산의 경우 단지 끝에 추가하면 됨으로 매우 빠릅니다. 하지만, 특정 행을 찾기 위해서는 전체 테이블을 탐색해야 합니다. 또한 행을 삭제하는 경우 뒤에 오는 행들을 일일이 옮겨 빈틈을 채우는 작업이 필요합니다.
 
-If we stored the table as an array, but kept rows sorted by id, we could use binary search to find a particular id. However, insertion would be slow because we would have to move a lot of rows to make space.
+만약 배열로 저장하지만 id 값으로 행의 정렬을 유지한다면, 특정 id를 이진 탐색으로 찾을 수  있을 것입니다. 그러나, 삽입 시 많은 행을 이동해야 하기 때문에 매우 느릴 것입니다.
 
-Instead, we're going with a tree structure. Each node in the tree can contain a variable number of rows, so we have to store some information in each node to keep track of how many rows it contains. Plus there is the storage overhead of all the internal nodes which don't store any rows. In exchange for a larger database file, we get fast insertion, deletion and lookup.
+이러한 이유로, 트리 구조를 사용합니다. 트리의 각 노드는 행의 개수를 가변적으로 갖게 됩니다. 그래서 각 노드가 몇 개의 행을 갖고 있는지 추적하기 위한 정보를 저장해야 합니다. 추가로 모든 내부 노드들이 어떠한 행도 저장하지 않아 발생하는 공간 낭비가 있습니다. 하지만 큰 데이터베이스 파일을 갖는 대신, 빠른 삽입, 삭제 그리고 탐색 연산을 갖게 됩니다.
 
-|               | Unsorted Array of rows | Sorted Array of rows | Tree of nodes |
-|---------------|------------------------|----------------------|---------------|
-| Pages contain | only data              | only data            | metadata, primary keys, and data              |
-| Rows per page | more                   | more                 | fewer         |
-| Insertion     | O(1)                   | O(n)                 | O(log(n))     |
-| Deletion      | O(n)                   | O(n)                 | O(log(n))     |
-| Lookup by id  | O(n)                   | O(log(n))            | O(log(n))     |
+|                  | 정렬되지 않은 행 배열  | 정렬된 행 배열       | 노드들의 트리            |
+|------------------|------------------------|----------------------|--------------------------|
+| 페이지가 갖는 값 | 오직 데이터            | 오직 데이터          | 메타데이터, 주키, 데이터 |
+| 페이지 별 행     | 많음                   | 많음                 | 적음                     |
+| 삽입             | O(1)                   | O(n)                 | O(log(n))                |
+| 삭제             | O(n)                   | O(n)                 | O(log(n))                |
+| id를 통한 탐색   | O(n)                   | O(log(n))            | O(log(n))                |
 
-## Node Header Format
+## 노드 헤더 형식
 
-Leaf nodes and internal nodes have different layouts. Let's make an enum to keep track of node type:
+단말 노드와 내부 노드는 다른 형식을 갖습니다. 노드 유형을 관리하기 위해 열거형을 만들겠습니다.
 
 ```diff
 +typedef enum { NODE_INTERNAL, NODE_LEAF } NodeType;
 ```
 
-Each node will correspond to one page. Internal nodes will point to their children by storing the page number that stores the child. The btree asks the pager for a particular page number and gets back a pointer into the page cache. Pages are stored in the database file one after the other in order of page number.
+각 노드는 하나의 페이지에 해당합니다. 내부 노드는 자식 노드에 해당하는 페이지 번호를 저장하여 자식 노드를 가리킵니다. B-트리는 페이저에 특정 페이지 번호를 요청하고, 페이지 캐시 내 해당 페이지의 포인터를 얻습니다. 페이지는 페이지 번호 순서대로 데이터베이스 파일에 차례로 저장됩니다.
 
-Nodes need to store some metadata in a header at the beginning of the page. Every node will store what type of node it is, whether or not it is the root node, and a pointer to its parent (to allow finding a node's siblings). I define constants for the size and offset of every header field:
+노드는 페이지 시작 부분에 있는 헤더에 일부 메타데이터를 저장해야 합니다. 모든 노드는 노드 유형, 루트 노드 여부, 그리고 부모 노드에 대한 포인터를 갖습니다. (형제 노드를 찾기 위해서 사용됩니다.) 다음과 같이 헤더 필드의 크기와 오프셋을 상수로 정의합니다.
 
 ```diff
 +/*
-+ * Common Node Header Layout
++ * 공통 노드 헤더 형식
 + */
 +const uint32_t NODE_TYPE_SIZE = sizeof(uint8_t);
 +const uint32_t NODE_TYPE_OFFSET = 0;
@@ -47,13 +47,13 @@ Nodes need to store some metadata in a header at the beginning of the page. Ever
 +    NODE_TYPE_SIZE + IS_ROOT_SIZE + PARENT_POINTER_SIZE;
 ```
 
-## Leaf Node Format
+## 단말 노드 형식
 
-In addition to these common header fields, leaf nodes need to store how many "cells" they contain. A cell is a key/value pair.
+공통 헤더 필드 외에도 단말 노드는 갖고 있는 "셀" 수를 정의해야 합니다. 셀은 키/값 쌍을 말합니다.
 
 ```diff
 +/*
-+ * Leaf Node Header Layout
++ * 단말 노드 헤더 형식
 + */
 +const uint32_t LEAF_NODE_NUM_CELLS_SIZE = sizeof(uint32_t);
 +const uint32_t LEAF_NODE_NUM_CELLS_OFFSET = COMMON_NODE_HEADER_SIZE;
@@ -61,11 +61,11 @@ In addition to these common header fields, leaf nodes need to store how many "ce
 +    COMMON_NODE_HEADER_SIZE + LEAF_NODE_NUM_CELLS_SIZE;
 ```
 
-The body of a leaf node is an array of cells. Each cell is a key followed by a value (a serialized row).
+단말 노드의 본체는 셀의 배열입니다. 각 셀은 키 뒤에 값 (직렬화된 행)을 갖습니다.
 
 ```diff
 +/*
-+ * Leaf Node Body Layout
++ * 단말 노드 본체 형식
 + */
 +const uint32_t LEAF_NODE_KEY_SIZE = sizeof(uint32_t);
 +const uint32_t LEAF_NODE_KEY_OFFSET = 0;
@@ -78,17 +78,17 @@ The body of a leaf node is an array of cells. Each cell is a key followed by a v
 +    LEAF_NODE_SPACE_FOR_CELLS / LEAF_NODE_CELL_SIZE;
 ```
 
-Based on these constants, here's what the layout of a leaf node looks like currently:
+정의한 상수들을 바탕으로, 단말 노드는 다음과 같은 형식을 갖습니다.
 
-{% include image.html url="assets/images/leaf-node-format.png" description="Our leaf node format" %}
+{% include image.html url="assets/images/leaf-node-format.png" description="우리의 단말 노드 형식" %}
 
-It's a little space inefficient to use an entire byte per boolean value in the header, but this makes it easier to write code to access those values.
+헤더에서 불 값을 하나의 바이트 공간에 저장하는 것은 비효율적입니다. 하지만 값들을 접근하는 코드를 작성하기 쉽게 만듭니다.
 
-Also notice that there's some wasted space at the end. We store as many cells as we can after the header, but the leftover space can't hold an entire cell. We leave it empty to avoid splitting cells between nodes.
+추가로 마지막에 낭비되는 공간이 있습니다. 우리는 헤더 필드 이후부터 가능한 많은 셀을 저장합니다. 하지만 하나의 셀을 저장하기에 불충분한 크기의 공간이 남게 됩니다. 필자는 하나의 셀이 두 노드로 분할되지 않도록 하기 위해 해당 공간을 빈 공간으로 남겨 두었습니다.
 
-## Accessing Leaf Node Fields
+## 단말 노드 필드 접근
 
-The code to access keys, values and metadata all involve pointer arithmetic using the constants we just defined.
+키, 값 그리고 메타데이터에 접근하는 모든 코드는 정의한 상수를 사용한 포인터 산술 연산입니다.
 
 ```diff
 +uint32_t* leaf_node_num_cells(void* node) {
@@ -111,11 +111,11 @@ The code to access keys, values and metadata all involve pointer arithmetic usin
 +
 ```
 
-These methods return a pointer to the value in question, so they can be used both as a getter and a setter.
+이러한 함수들은 요청한 값의 포인터를 반환하므로, 게터와 세터로 모두 사용할 수 있습니다.
 
-## Changes to Pager and Table Objects
+## 페이저와 테이블 객체 변경
 
-Every node is going to take up exactly one page, even if it's not full. That means our pager no longer needs to support reading/writing partial pages.
+모든 노드는 꽉 차지는 않더라도 정확히 한 페이지씩 차지하게 됩니다. 이것은 페이저가 불완전 페이지에 대한 읽기/쓰기를 고려할 필요가 없음을 의미합니다.
 ```diff
 -void pager_flush(Pager* pager, uint32_t page_num, uint32_t size) {
 +void pager_flush(Pager* pager, uint32_t page_num) {
@@ -149,8 +149,8 @@ Every node is going to take up exactly one page, even if it's not full. That mea
      pager->pages[i] = NULL;
    }
  
--  // There may be a partial page to write to the end of the file
--  // This should not be needed after we switch to a B-tree
+-  // 파일의 끝에 불완전한 페이지를 저장할 수도 있습니다.
+-  // B-트리로 전환하면 이 작업은 필요하지 않게 됩니다.
 -  uint32_t num_additional_rows = table->num_rows % ROWS_PER_PAGE;
 -  if (num_additional_rows > 0) {
 -    uint32_t page_num = num_full_pages;
@@ -166,7 +166,7 @@ Every node is going to take up exactly one page, even if it's not full. That mea
      printf("Error closing db file.\n");
 ```
 
-Now it makes more sense to store the number of pages in our database rather than the number of rows. The number of pages should be associated with the pager object, not the table, since it's the number of pages used by the database, not a particular table. A btree is identified by its root node page number, so the table object needs to keep track of that.
+이제 데이터베이스에 행 수를 저장하기 보다 페이지 수를 저장하는 것이 더 합리적입니다. 페이지 수는 특정 테이블이 아닌 데이터베이스에서 사용하기 때문에 테이블 객체가 아닌 페이저 객체에 포함되어야 합니다. B-트리는 루트 노드 페이지 번호를 통해 식별되므로, 테이블 객체가 루트 노드 페이지 정보를 관리해야 합니다.
 
 ```diff
  const uint32_t PAGE_SIZE = 4096;
@@ -218,9 +218,9 @@ Now it makes more sense to store the number of pages in our database rather than
      pager->pages[i] = NULL;
 ```
 
-## Changes to the Cursor Object
+## 커서 객체 변경
 
-A cursor represents a position in the table. When our table was a simple array of rows, we could access a row given just the row number. Now that it's a tree, we identify a position by the page number of the node, and the cell number within that node.
+커서는 테이블에서 위치를 나타냅니다. 테이블이 단순 행 배열이었을 때, 행 번호를 통해 쉽게 접근이 가능했습니다. 이제는 트리로 변경되었고, 노드의 페이지 번호와 해당 노드 내 셀 번호로 위치를 식별합니다.
 
 ```diff
  typedef struct {
@@ -228,7 +228,7 @@ A cursor represents a position in the table. When our table was a simple array o
 -  uint32_t row_num;
 +  uint32_t page_num;
 +  uint32_t cell_num;
-   bool end_of_table;  // Indicates a position one past the last element
+   bool end_of_table;  // 마지막 행의 다음 위치를 가리키고 있음을 나타냅니다.
  } Cursor;
 ```
 
@@ -292,17 +292,17 @@ A cursor represents a position in the table. When our table was a simple array o
  }
 ```
 
-## Insertion Into a Leaf Node
+## 단말 노드 삽입
 
-In this article we're only going to implement enough to get a single-node tree. Recall from last article that a tree starts out as an empty leaf node:
+이번 장에서는 단일 노드 트리에 대한 구현을 진행합니다. 먼저 트리가 빈 단말 노드로 시작함을 다시 떠올려 보기 바랍니다.
 
-{% include image.html url="assets/images/btree1.png" description="empty btree" %}
+{% include image.html url="assets/images/btree1.png" description="빈 B-트리" %}
 
-Key/value pairs can be added until the leaf node is full:
+키/값 쌍은 단말 노드가 가득 찰 때까지 추가될 수 있습니다.
 
-{% include image.html url="assets/images/btree2.png" description="one-node btree" %}
+{% include image.html url="assets/images/btree2.png" description="단일 노드 B-트리" %}
 
-When we open the database for the first time, the database file will be empty, so we initialize page 0 to be an empty leaf node (the root node):
+데이터베이스를 처음 열면 파일이 비어있으므로, 0번 페이지를 빈 단말 노드 (루트 노드)로 초기화합니다.
 
 ```diff
  Table* db_open(const char* filename) {
@@ -315,7 +315,7 @@ When we open the database for the first time, the database file will be empty, s
 +  table->root_page_num = 0;
 +
 +  if (pager->num_pages == 0) {
-+    // New database file. Initialize page 0 as leaf node.
++    // 새 데이터베이스 파일. 페이지 0을 단말 노드로 초기화합니다.
 +    void* root_node = get_page(pager, 0);
 +    initialize_leaf_node(root_node);
 +  }
@@ -324,7 +324,7 @@ When we open the database for the first time, the database file will be empty, s
  }
 ```
 
-Next we'll make a function for inserting a key/value pair into a leaf node. It will take a cursor as input to represent the position where the pair should be inserted.
+다음으로 키/값 쌍을 단말 노드에 삽입하는 함수를 생성합니다. 쌍이 삽입될 위치를 나타내는 커서를 입력으로 받습니다.
 
 ```diff
 +void leaf_node_insert(Cursor* cursor, uint32_t key, Row* value) {
@@ -332,13 +332,13 @@ Next we'll make a function for inserting a key/value pair into a leaf node. It w
 +
 +  uint32_t num_cells = *leaf_node_num_cells(node);
 +  if (num_cells >= LEAF_NODE_MAX_CELLS) {
-+    // Node full
++    // 노드가 가득 찬 경우
 +    printf("Need to implement splitting a leaf node.\n");
 +    exit(EXIT_FAILURE);
 +  }
 +
 +  if (cursor->cell_num < num_cells) {
-+    // Make room for new cell
++    // 새로운 셀을 위한 공간 생성
 +    for (uint32_t i = num_cells; i > cursor->cell_num; i--) {
 +      memcpy(leaf_node_cell(node, i), leaf_node_cell(node, i - 1),
 +             LEAF_NODE_CELL_SIZE);
@@ -352,9 +352,9 @@ Next we'll make a function for inserting a key/value pair into a leaf node. It w
 +
 ```
 
-We haven't implemented splitting yet, so we error if the node is full. Next we shift cells one space to the right to make room for the new cell. Then we write the new key/value into the empty space.
+아직 분할이 구현되지 않았으므로 노드가 가득 차면 에러를 발생합니다. 다음으로 새로운 셀의 공간을 만들기 위해 기존 셀들을 오른쪽으로 한 칸씩 이동시킵니다. 그런 다음 빈 공간에 새 키/값을 씁니다.
 
-Since we assume the tree only has one node, our `execute_insert()` function simply needs to call this helper method:
+단일 노드 트리로 가정했기 때문에 `execute_insert()` 함수는 이 헬퍼 함수를 호출하기만 하면 됩니다.
 
 ```diff
  ExecuteResult execute_insert(Statement* statement, Table* table) {
@@ -374,13 +374,13 @@ Since we assume the tree only has one node, our `execute_insert()` function simp
    free(cursor);
 ```
 
-With those changes, our database should work as before! Except now it returns a "Table Full" error much sooner, since we can't split the root node yet.
+변경을 통해, 데이터베이스는 전과 같이 작동합니다! 루트 노드를 아직 분할할 수 없기 때문에 중간에 "Table Full" 에러를 반환하는 것을 제외하면 말이죠.
 
-How many rows can the leaf node hold?
+그렇다면, 단말 노드는 몇 개의 행을 저장할 수 있을까요?
 
-## Command to Print Constants
+## 상수 출력 명령
 
-I'm adding a new meta command to print out a few constants of interest.
+몇 가지 주요한 상숫값을 출력하기 위해 메타 명령을 추가합니다.
 
 ```diff
 +void print_constants() {
@@ -405,7 +405,7 @@ I'm adding a new meta command to print out a few constants of interest.
    }
 ```
 
-I'm also adding a test so we get alerted when those constants change:
+또한 테스트를 추가하여 상숫값이 다른 경우 경고가 발생토록 합니다.
 ```diff
 +  it 'prints constants' do
 +    script = [
@@ -427,11 +427,11 @@ I'm also adding a test so we get alerted when those constants change:
 +  end
 ```
 
-So our table can hold 13 rows right now!
+우리 테이블은 지금 13 행을 수용할 수 있습니다!
 
-## Tree Visualization
+## 트리 시각화
 
-To help with debugging and visualization, I'm also adding a meta command to print out a representation of the btree.
+또한, 디버깅과 시각화를 돕기 위해 B-트리 형태를 출력하는 메타 명령을 추가합니다.
 
 ```diff
 +void print_leaf_node(void* node) {
@@ -463,7 +463,7 @@ To help with debugging and visualization, I'm also adding a meta command to prin
    }
 ```
 
-And a test
+그리고 테스트도 추가합니다.
 
 ```diff
 +  it 'allows printing out the structure of a one-node btree' do
@@ -488,15 +488,15 @@ And a test
 +  end
 ```
 
-Uh oh, we're still not storing rows in sorted order. You'll notice that `execute_insert()` inserts into the leaf node at the position returned by `table_end()`. So rows are stored in the order they were inserted, just like before.
+아직 행을 정렬된 순서로 저장하진 않습니다. `execute_insert()` 함수 가 `table_end()` 함수가 반환한 위치에 단말 노드를 삽입하고 있음을 주목하기 바랍니다. 따라서, 이전과 마찬가지로 삽입된 순서대로 저장됩니다.
 
-## Next Time
+## 다음 장에서
 
-This all might seem like a step backwards. Our database now stores fewer rows than it did before, and we're still storing rows in unsorted order. But like I said at the beginning, this is a big change and it's important to break it up into manageable steps.
+퇴보한 것처럼 보일 수 있습니다. 이전 보다 적은 행을 저장하고, 여전히 행은 정렬되지 않습니다. 하지만 처음에 말했듯이, 굉장히 큰 변경 작업으로써 다루기 쉬운 단계들로 나눠 접근 하는 것이 중요합니다.
 
-Next time, we'll implement finding a record by primary key, and start storing rows in sorted order.
+다음 장에서는, 기본 키를 통한 레코드 탐색을 구현하며 정렬된 순서대로 행을 저장할 것입니다.
 
-## Complete Diff
+## 변경된 부분
 
 ```diff
 @@ -62,29 +62,101 @@ const uint32_t ROW_SIZE = ID_SIZE + USERNAME_SIZE + EMAIL_SIZE;
@@ -524,13 +524,13 @@ Next time, we'll implement finding a record by primary key, and start storing ro
 -  uint32_t row_num;
 +  uint32_t page_num;
 +  uint32_t cell_num;
-   bool end_of_table;  // Indicates a position one past the last element
+   bool end_of_table;  // 마지막 행의 다음 위치를 가리키고 있음을 나타냅니다.
  } Cursor;
 
 +typedef enum { NODE_INTERNAL, NODE_LEAF } NodeType;
 +
 +/*
-+ * Common Node Header Layout
++ * 공통 노드 헤더 형식
 + */
 +const uint32_t NODE_TYPE_SIZE = sizeof(uint8_t);
 +const uint32_t NODE_TYPE_OFFSET = 0;
@@ -542,7 +542,7 @@ Next time, we'll implement finding a record by primary key, and start storing ro
 +    NODE_TYPE_SIZE + IS_ROOT_SIZE + PARENT_POINTER_SIZE;
 +
 +/*
-+ * Leaf Node Header Layout
++ * 단말 노드 헤더 형식
 + */
 +const uint32_t LEAF_NODE_NUM_CELLS_SIZE = sizeof(uint32_t);
 +const uint32_t LEAF_NODE_NUM_CELLS_OFFSET = COMMON_NODE_HEADER_SIZE;
@@ -550,7 +550,7 @@ Next time, we'll implement finding a record by primary key, and start storing ro
 +    COMMON_NODE_HEADER_SIZE + LEAF_NODE_NUM_CELLS_SIZE;
 +
 +/*
-+ * Leaf Node Body Layout
++ * 단말 노드 본체 형식
 + */
 +const uint32_t LEAF_NODE_KEY_SIZE = sizeof(uint32_t);
 +const uint32_t LEAF_NODE_KEY_OFFSET = 0;
@@ -697,7 +697,7 @@ Next time, we'll implement finding a record by primary key, and start storing ro
 +  table->root_page_num = 0;
 +
 +  if (pager->num_pages == 0) {
-+    // New database file. Initialize page 0 as leaf node.
++    // 새 데이터베이스 파일. 페이지 0을 단말 노드로 초기화합니다.
 +    void* root_node = get_page(pager, 0);
 +    initialize_leaf_node(root_node);
 +  }
@@ -741,8 +741,8 @@ Next time, we'll implement finding a record by primary key, and start storing ro
      pager->pages[i] = NULL;
    }
  
--  // There may be a partial page to write to the end of the file
--  // This should not be needed after we switch to a B-tree
+-  // 파일의 끝에 불완전한 페이지를 저장할 수도 있습니다.
+-  // B-트리로 전환하면 이 작업은 필요하지 않게 됩니다.
 -  uint32_t num_additional_rows = table->num_rows % ROWS_PER_PAGE;
 -  if (num_additional_rows > 0) {
 -    uint32_t page_num = num_full_pages;
@@ -780,13 +780,13 @@ Next time, we'll implement finding a record by primary key, and start storing ro
 +
 +  uint32_t num_cells = *leaf_node_num_cells(node);
 +  if (num_cells >= LEAF_NODE_MAX_CELLS) {
-+    // Node full
++    // 노드가 가득 찬 경우
 +    printf("Need to implement splitting a leaf node.\n");
 +    exit(EXIT_FAILURE);
 +  }
 +
 +  if (cursor->cell_num < num_cells) {
-+    // Make room for new cell
++    // 새로운 셀을 위한 공간 생성
 +    for (uint32_t i = num_cells; i > cursor->cell_num; i--) {
 +      memcpy(leaf_node_cell(node, i), leaf_node_cell(node, i - 1),
 +             LEAF_NODE_CELL_SIZE);

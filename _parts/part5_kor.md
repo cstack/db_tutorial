@@ -1,11 +1,11 @@
 ---
-title: Part 5 - Persistence to Disk
+title: 제5 장 - 디스크 지속성
 date: 2017-09-08
 ---
 
-> "Nothing in the world can take the place of persistence." -- [Calvin Coolidge](https://en.wikiquote.org/wiki/Calvin_Coolidge)
+> "세상에서 끈기를 대신할 수 있는 것은 없다." -- [캘빈 쿨리지](https://en.wikiquote.org/wiki/Calvin_Coolidge)
 
-Our database lets you insert records and read them back out, but only as long as you keep the program running. If you kill the program and start it back up, all your records are gone. Here's a spec for the behavior we want:
+우리의 데이터베이스가 레코드를 삽입하고 다시 읽어 올수 있게 되었습니다. 단, 프로그램이 계속 실행 중이어야만 합니다. 만약 프로그램을 종료하고 다시 시작한다면, 모든 레코드는 사라지게 됩니다. 우리는 다음과 같이 작동하길 원합니다.
 
 ```ruby
 it 'keeps data after closing connection' do
@@ -29,15 +29,15 @@ it 'keeps data after closing connection' do
 end
 ```
 
-Like sqlite, we're going to persist records by saving the entire database to a file.
+sqlite처럼 전체 데이터베이스를 파일에 저장하여 레코드가 지속되도록 해보겠습니다.
 
-We already set ourselves up to do that by serializing rows into page-sized memory blocks. To add persistence, we can simply write those blocks of memory to a file, and read them back into memory the next time the program starts up.
+우리는 페이지 크기의 메모리 블록으로 행을 직렬화 하였습니다. 이는 파일 저장 작업을 위한 준비를 이미 마친 것입니다. 지속성 추가를 위해서는, 단순히 메모리의 블록들을 파일에 쓰고 프로그램 시작 시 다시 읽어 오면 될 것입니다.
 
-To make this easier, we're going to make an abstraction called the pager. We ask the pager for page number `x`, and the pager gives us back a block of memory. It first looks in its cache. On a cache miss, it copies data from disk into memory (by reading the database file).
+좀 더 쉽게 하기 위해, 페이저라는 추상 객체를 만들겠습니다. 우리는 페이저에게 페이지 번호 `x`를 요청하고, 페이저는 메모리의 블록을 돌려줍니다. 페이저는 먼저 캐시를 탐색합니다. 캐시 미스가 발생하는 경우, 디스크에서 메모리로 블록을 복사합니다. (데이터베이스 파일을 읽음으로써)
 
-{% include image.html url="assets/images/arch-part5.gif" description="How our program matches up with SQLite architecture" %}
+{% include image.html url="assets/images/arch-part5.gif" description="우리의 프로그램과 SQLite 구조 간 비교" %}
 
-The Pager accesses the page cache and the file. The Table object makes requests for pages through the pager:
+페이저는 페이지 캐시와 파일에 접근합니다. 테이블 객체는 페이저를 통해 페이지들을 요청합니다.
 
 ```diff
 +typedef struct {
@@ -53,11 +53,11 @@ The Pager accesses the page cache and the file. The Table object makes requests 
  } Table;
 ```
 
-I'm renaming `new_table()` to `db_open()` because it now has the effect of opening a connection to the database. By opening a connection, I mean:
+이제 `new_table()` 함수가 데이터베이스에 대한 연결을 여는 기능을 갖기 때문에 함수의 이름을 `db_open()` 으로 변경합니다. 연결을 여는 것은 다음을 뜻합니다.
 
-- opening the database file
-- initializing a pager data structure
-- initializing a table data structure
+- 데이터베이스 파일을 엽니다.
+- 페이저 데이터 구조를 초기화합니다.
+- 테이블 데이터 구조를 초기화합니다.
 
 ```diff
 -Table* new_table() {
@@ -74,15 +74,15 @@ I'm renaming `new_table()` to `db_open()` because it now has the effect of openi
  }
 ```
 
-`db_open()` in turn calls `pager_open()`, which opens the database file and keeps track of its size. It also initializes the page cache to all `NULL`s.
+`db_open()` 내부에서는 데이터 베이스 파일을 열고 파일의 크기를 확인하는 `pager_open()` 을 호출합니다. `pager_open()` 은 모든 페이지 캐시를 `NULL`로 초기화합니다.
 
 ```diff
 +Pager* pager_open(const char* filename) {
 +  int fd = open(filename,
-+                O_RDWR |      // Read/Write mode
-+                    O_CREAT,  // Create file if it does not exist
-+                S_IWUSR |     // User write permission
-+                    S_IRUSR   // User read permission
++                O_RDWR |      // 읽기/쓰기 모드
++                    O_CREAT,  // 파일이 존재하지 않으면 파일 생성
++                S_IWUSR |     // 사용자 쓰기 권한
++                    S_IRUSR   // 사용자 읽기 권한
 +                );
 +
 +  if (fd == -1) {
@@ -104,14 +104,14 @@ I'm renaming `new_table()` to `db_open()` because it now has the effect of openi
 +}
 ```
 
-Following our new abstraction, we move the logic for fetching a page into its own method:
+페이저 추상화를 위해, 페이지를 가져오는 로직을 하나의 함수로 생성합니다.
 
 ```diff
  void* row_slot(Table* table, uint32_t row_num) {
    uint32_t page_num = row_num / ROWS_PER_PAGE;
 -  void* page = table->pages[page_num];
 -  if (page == NULL) {
--    // Allocate memory only when we try to access page
+-    // 페이지에 접근하는 경우 메모리 할당
 -    page = table->pages[page_num] = malloc(PAGE_SIZE);
 -  }
 +  void* page = get_page(table->pager, page_num);
@@ -121,7 +121,7 @@ Following our new abstraction, we move the logic for fetching a page into its ow
  }
 ```
 
-The `get_page()` method has the logic for handling a cache miss. We assume pages are saved one after the other in the database file: Page 0 at offset 0, page 1 at offset 4096, page 2 at offset 8192, etc. If the requested page lies outside the bounds of the file, we know it should be blank, so we just allocate some memory and return it. The page will be added to the file when we flush the cache to disk later.
+`get_page()` 는 캐시 미스를 처리하는 로직을 갖습니다. 페이지는 데이터베이스 파일에 순서대로 저장된다고 가정합니다. (0번 페이지 오프셋 : 0, 1번 페이지 오프셋 : 4096, 2번 페이지 오프셋 : 8192 ...) 요청된 페이지가 파일의 범위를 벗어나는 경우, 아무것도 없음을 알기 때문에, 메모리 공간만 할당하고 반환하면 됩니다. 이 공간은 나중에 캐시를 디스크에 플러시 할 때 파일에 추가됩니다.
 
 
 ```diff
@@ -133,11 +133,11 @@ The `get_page()` method has the logic for handling a cache miss. We assume pages
 +  }
 +
 +  if (pager->pages[page_num] == NULL) {
-+    // Cache miss. Allocate memory and load from file.
++    // 캐시 미스. 메모리를 할당하고 파일에서 읽어옵니다.
 +    void* page = malloc(PAGE_SIZE);
 +    uint32_t num_pages = pager->file_length / PAGE_SIZE;
 +
-+    // We might save a partial page at the end of the file
++    // 파일의 끝에 불완전한 페이지를 저장할 수도 있습니다.
 +    if (pager->file_length % PAGE_SIZE) {
 +      num_pages += 1;
 +    }
@@ -158,11 +158,11 @@ The `get_page()` method has the logic for handling a cache miss. We assume pages
 +}
 ```
 
-For now, we'll wait to flush the cache to disk until the user closes the connection to the database. When the user exits, we'll call a new method called `db_close()`, which
+현재는, 사용자가 데이터베이스 연결을 종료 할때 까지 캐시를 디스크에 플러시 하지 않고 기다립니다. 이제 사용자가 종료할 때 `db_close()` 라는 새로운 함수를 호출하도록 만들어 보겠습니다. 새로운 함수는 다음을 수행합니다.
 
-- flushes the page cache to disk
-- closes the database file
-- frees the memory for the Pager and Table data structures
+- 페이지 캐시를 디스크에 플러시 합니다.
+- 데이터베이스 파일을 닫습니다.
+- 페이저와 테이블 구조의 메모리를 해제합니다.
 
 ```diff
 +void db_close(Table* table) {
@@ -178,8 +178,8 @@ For now, we'll wait to flush the cache to disk until the user closes the connect
 +    pager->pages[i] = NULL;
 +  }
 +
-+  // There may be a partial page to write to the end of the file
-+  // This should not be needed after we switch to a B-tree
++  // 파일의 끝에 불완전한 페이지를 저장할 수도 있습니다.
++  // B-트리로 전환하면 이 작업은 필요하지 않게 됩니다.
 +  uint32_t num_additional_rows = table->num_rows % ROWS_PER_PAGE;
 +  if (num_additional_rows > 0) {
 +    uint32_t page_num = num_full_pages;
@@ -215,7 +215,7 @@ For now, we'll wait to flush the cache to disk until the user closes the connect
      return META_COMMAND_UNRECOGNIZED_COMMAND;
 ```
 
-In our current design, the length of the file encodes how many rows are in the database, so we need to write a partial page at the end of the file. That's why `pager_flush()` takes both a page number and a size. It's not the greatest design, but it will go away pretty quickly when we start implementing the B-tree.
+현재 설계에서는, 파일의 길이로 데이터베이스에 몇 개의 행이 있는지 계산합니다. 그래서 파일 끝에 불완전한 페이지를 저장해야만 합니다. 이는 `pager_flush()` 가 페이지 번호와 크기를 함께 매개 변수로 갖는 이유입니다. 좋은 설계는 아니며, B-트리 구현을 시작하면 금방 사라질 것입니다.
 
 ```diff
 +void pager_flush(Pager* pager, uint32_t page_num, uint32_t size) {
@@ -241,7 +241,7 @@ In our current design, the length of the file encodes how many rows are in the d
 +}
 ```
 
-Lastly, we need to accept the filename as a command-line argument. Don't forget to also add the extra argument to `do_meta_command`:
+마지막으로 파일명을 명령행 인자로 받아들여야 합니다. 또한 `do_meta_command` 에 인자를 추가해야 합니다.
 
 ```diff
  int main(int argc, char* argv[]) {
@@ -263,7 +263,7 @@ Lastly, we need to accept the filename as a command-line argument. Don't forget 
 -      switch (do_meta_command(input_buffer)) {
 +      switch (do_meta_command(input_buffer, table)) {
 ```
-With these changes, we're able to close then reopen the database, and our records are still there!
+개선을 통해, 데이터베이스를 닫고 다시 열수 있으며, 입력한 레코드들도 그대로 남게 됩니다!
 
 ```
 ~ ./db mydb.db
@@ -282,23 +282,21 @@ db > .exit
 ~
 ```
 
-For extra fun, let's take a look at `mydb.db` to see how our data is being stored. I'll use vim as a hex editor to look at the memory layout of the file:
+추가로 재미 삼아 `mydb.db` 를 통해 데이터가 어떻게 저장되고 있는지 살펴보겠습니다. vim을 16진수 편집기로 사용하여 파일의 메모리 레이아웃을 살펴보겠습니다.
 
 ```
 vim mydb.db
 :%!xxd
 ```
-{% include image.html url="assets/images/file-format.png" description="Current File Format" %}
+{% include image.html url="assets/images/file-format.png" description="현재 파일 형식" %}
 
-The first four bytes are the id of the first row (4 bytes because we store a `uint32_t`). It's stored in little-endian byte order, so the least significant byte comes first (01), followed by the higher-order bytes (00 00 00). We used `memcpy()` to copy bytes from our `Row` struct into the page cache, so that means the struct was laid out in memory in little-endian byte order. That's an attribute of the machine I compiled the program for. If we wanted to write a database file on my machine, then read it on a big-endian machine, we'd have to change our `serialize_row()` and `deserialize_row()` methods to always store and read bytes in the same order.
+첫 4 바이트는 첫 번째 행의 id입니다. (`uint32_t` 를 사용함으로 4바이트입니다.) 리틀 엔디안 순서로 저장되어서, 최하위 바이트 (01) 가 먼저 나오고 상위 바이트 (00 00 00) 가 따라오게 됩니다. `Row` 구조체를 페이지 캐시로 복사할 때 `memcpy()` 를 사용하였습니다. 따라서 구조체는 리틀 엔디안 순서로 메모리에 저장됩니다. 이것은 필자가 프로그램 컴파일에 사용한 머신의 특성입니다. 만약 필자의 머신에서 작성된 데이터베이스 파일을 다른 빅 엔디안 머신에서 읽으려면, `serialize_row()` 와 `deserialize_row()` 함수가 항상 동일한 방식의 저장 방식을 사용하도록 수정해야 합니다.
 
-The next 33 bytes store the username as a null-terminated string. Apparently "cstack" in ASCII hexadecimal is `63 73 74 61 63 6b`, followed by a null character (`00`). The rest of the 33 bytes are unused.
+다음 33 바이트는 사용자 이름을 null 종료 문자열로 저장합니다. 보이는 것처럼, "cstack" 은 ASCII 16진수 값으로 `63 73 74 61 63 6b` 이며 null 문자 (`00`) 가 따라옵니다. 33 바이트 중 나머지는 사용되지 않습니다.
 
-The next 256 bytes store the email in the same way. Here we can see some random junk after the terminating null character. This is most likely due to uninitialized memory in our `Row` struct. We copy the entire 256-byte email buffer into the file, including any bytes after the end of the string. Whatever was in memory when we allocated that struct is still there. But since we use a terminating null character, it has no effect on behavior.
+다음 256 바이트는 동일한 방식으로 저장된 이메일 정보입니다. 여기를 보면, null 문자 이후에 랜덤 한 쓰레기 값을 볼 수 있습니다. 이는 메모리에서 `Row` 구조체를 초기화하지 않아 발생합니다. 우리는 문자열이 아닌 값들도 함께 포함된 256 바이트의 이메일 버퍼 전체를 파일에 복사한 것입니다. 따라서, 구조체 할당 전에 있던 무언가의 값이 그대로 기록된 것입니다. 하지만 null 종료 문자를 사용하기 때문에 작동에 영향을 미치지는 않았습니다.
 
-**NOTE**: If we wanted to ensure that all bytes are initialized, it would
-suffice to use `strncpy` instead of `memcpy` while copying the `username`
-and `email` fields of rows in `serialize_row`, like so:
+**참고**: 모든 바이트를 초기화하려면, `serialize_row` 에서  `username` 과 `email` 필드를 복사할 때 `memcpy` 대신 `strncpy` 를 사용하면 됩니다.
 
 ```diff
  void serialize_row(Row* source, void* destination) {
@@ -310,15 +308,15 @@ and `email` fields of rows in `serialize_row`, like so:
  }
 ```
 
-## Conclusion
+## 결론
 
-Alright! We've got persistence. It's not the greatest. For example if you kill the program without typing `.exit`, you lose your changes. Additionally, we're writing all pages back to disk, even pages that haven't changed since we read them from disk. These are issues we can address later.
+좋습니다! 이제 지속성을 갖게 되었습니다. 하지만 훌륭하진 않습니다. 예를 들어 `.exit` 를 입력하지 않고 프로그램을 종료하는 경우 변경 내용이 손실됩니다. 또한 디스크에서 읽은 이후 변경되지 않은 페이지까지 디스크에 저장하고 있습니다. 이러한 문제들은 차후에 다루겠습니다.
 
-Next time we'll introduce cursors, which should make it easier to implement the B-tree.
+다음 장에서는 커서를 소개하겠습니다. 커서를 통해 B-트리를 쉽게 구현할 수 있을 것입니다.
 
-Until then!
+다음 장에서 뵙겠습니다!
 
-## Complete Diff
+## 변경된 부분
 ```diff
 +#include <errno.h>
 +#include <fcntl.h>
@@ -359,11 +357,11 @@ Until then!
 +  }
 +
 +  if (pager->pages[page_num] == NULL) {
-+     // Cache miss. Allocate memory and load from file.
++     // 캐시 미스. 메모리를 할당하고 파일에서 읽어옵니다.
 +     void* page = malloc(PAGE_SIZE);
 +     uint32_t num_pages = pager->file_length / PAGE_SIZE;
 +
-+     // We might save a partial page at the end of the file
++     // 파일의 끝에 불완전한 페이지를 저장할 수도 있습니다.
 +     if (pager->file_length % PAGE_SIZE) {
 +         num_pages += 1;
 +     }
@@ -387,7 +385,7 @@ Until then!
    uint32_t page_num = row_num / ROWS_PER_PAGE;
 -  void *page = table->pages[page_num];
 -  if (page == NULL) {
--     // Allocate memory only when we try to access page
+-     // 페이지에 접근하는 경우 메모리 할당
 -     page = table->pages[page_num] = malloc(PAGE_SIZE);
 -  }
 +  void *page = get_page(table->pager, page_num);
@@ -401,10 +399,10 @@ Until then!
 -  table->num_rows = 0;
 +Pager* pager_open(const char* filename) {
 +  int fd = open(filename,
-+     	  O_RDWR | 	// Read/Write mode
-+     	      O_CREAT,	// Create file if it does not exist
-+     	  S_IWUSR |	// User write permission
-+     	      S_IRUSR	// User read permission
++     	  O_RDWR | 	// 읽기/쓰기 모드
++     	      O_CREAT,	// 파일이 존재하지 않으면 파일 생성
++     	  S_IWUSR |	// 사용자 쓰기 권한
++     	      S_IRUSR	// 사용자 읽기 권한
 +     	  );
 +
 +  if (fd == -1) {
@@ -485,8 +483,8 @@ Until then!
 +     pager->pages[i] = NULL;
 +  }
 +
-+  // There may be a partial page to write to the end of the file
-+  // This should not be needed after we switch to a B-tree
++  // 파일의 끝에 불완전한 페이지를 저장할 수도 있습니다.
++  // B-트리로 전환하면 이 작업은 필요하지 않게 됩니다.
 +  uint32_t num_additional_rows = table->num_rows % ROWS_PER_PAGE;
 +  if (num_additional_rows > 0) {
 +     uint32_t page_num = num_full_pages;
@@ -548,7 +546,7 @@ Until then!
      print_prompt();
 ```
 
-And the diff to our tests:
+그리고 변경된 테스트들입니다.
 ```diff
  describe 'database' do
 +  before do

@@ -183,7 +183,7 @@ memory release function and handle a few more error cases:
 
 ```diff
 + Table* new_table() {
-+  Table* table = malloc(sizeof(Table));
++  Table* table = (Table*)malloc(sizeof(Table));
 +  table->num_rows = 0;
 +  for (uint32_t i = 0; i < TABLE_MAX_PAGES; i++) {
 +     table->pages[i] = NULL;
@@ -342,7 +342,7 @@ We'll address those issues in the next part. For now, here's the complete diff f
 +}
 +
 +Table* new_table() {
-+  Table* table = malloc(sizeof(Table));
++  Table* table = (Table*)malloc(sizeof(Table));
 +  table->num_rows = 0;
 +  for (uint32_t i = 0; i < TABLE_MAX_PAGES; i++) {
 +     table->pages[i] = NULL;
@@ -358,7 +358,7 @@ We'll address those issues in the next part. For now, here's the complete diff f
 +}
 +
  InputBuffer* new_input_buffer() {
-   InputBuffer* input_buffer = malloc(sizeof(InputBuffer));
+   InputBuffer* input_buffer = (InputBuffer*)malloc(sizeof(InputBuffer));
    input_buffer->buffer = NULL;
 @@ -40,17 +140,105 @@ void close_input_buffer(InputBuffer* input_buffer) {
      free(input_buffer);

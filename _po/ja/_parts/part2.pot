@@ -1,0 +1,325 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2021-11-23 11:24+0900\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: ../../../_parts/part2.md:1
+msgid "---\n"
+"title: Part 2 - World's Simplest SQL Compiler and Virtual Machine\n"
+"date: 2017-08-31\n"
+"---"
+msgstr ""
+
+#: ../../../_parts/part2.md:6
+msgid "We're making a clone of sqlite. The \"front-end\" of sqlite is a SQL compiler that parses a string and outputs an internal representation called bytecode."
+msgstr ""
+
+#: ../../../_parts/part2.md:8
+msgid "This bytecode is passed to the virtual machine, which executes it."
+msgstr ""
+
+#: ../../../_parts/part2.md:10
+msgid "{% include image.html url=\"assets/images/arch2.gif\" description=\"SQLite Architecture (https://www.sqlite.org/arch.html)\" %}"
+msgstr ""
+
+#: ../../../_parts/part2.md:12
+msgid "Breaking things into two steps like this has a couple advantages:\n"
+"- Reduces the complexity of each part (e.g. virtual machine does not worry about syntax errors)\n"
+"- Allows compiling common queries once and caching the bytecode for improved performance"
+msgstr ""
+
+#: ../../../_parts/part2.md:16
+msgid "With this in mind, let's refactor our `main` function and support two new keywords in the process:"
+msgstr ""
+
+#: ../../../_parts/part2.md:18
+msgid "```diff\n"
+" int main(int argc, char* argv[]) {\n"
+"   InputBuffer* input_buffer = new_input_buffer();\n"
+"   while (true) {\n"
+"     print_prompt();\n"
+"     read_input(input_buffer);"
+msgstr ""
+
+#: ../../../_parts/part2.md:25
+msgid "-    if (strcmp(input_buffer->buffer, \".exit\") == 0) {\n"
+"-      exit(EXIT_SUCCESS);\n"
+"-    } else {\n"
+"-      printf(\"Unrecognized command '%s'.\\n\", input_buffer->buffer);\n"
+"+    if (input_buffer->buffer[0] == '.') {\n"
+"+      switch (do_meta_command(input_buffer)) {\n"
+"+        case (META_COMMAND_SUCCESS):\n"
+"+          continue;\n"
+"+        case (META_COMMAND_UNRECOGNIZED_COMMAND):\n"
+"+          printf(\"Unrecognized command '%s'\\n\", input_buffer->buffer);\n"
+"+          continue;\n"
+"+      }\n"
+"     }\n"
+"+\n"
+"+    Statement statement;\n"
+"+    switch (prepare_statement(input_buffer, &statement)) {\n"
+"+      case (PREPARE_SUCCESS):\n"
+"+        break;\n"
+"+      case (PREPARE_UNRECOGNIZED_STATEMENT):\n"
+"+        printf(\"Unrecognized keyword at start of '%s'.\\n\",\n"
+"+               input_buffer->buffer);\n"
+"+        continue;\n"
+"+    }\n"
+"+\n"
+"+    execute_statement(&statement);\n"
+"+    printf(\"Executed.\\n\");\n"
+"   }\n"
+" }\n"
+"```"
+msgstr ""
+
+#: ../../../_parts/part2.md:55
+msgid "Non-SQL statements like `.exit` are called \"meta-commands\". They all start with a dot, so we check for them and handle them in a separate function."
+msgstr ""
+
+#: ../../../_parts/part2.md:57
+msgid "Next, we add a step that converts the line of input into our internal representation of a statement. This is our hacky version of the sqlite front-end."
+msgstr ""
+
+#: ../../../_parts/part2.md:59
+msgid "Lastly, we pass the prepared statement to `execute_statement`. This function will eventually become our virtual machine."
+msgstr ""
+
+#: ../../../_parts/part2.md:61
+msgid "Notice that two of our new functions return enums indicating success or failure:"
+msgstr ""
+
+#: ../../../_parts/part2.md:63
+msgid "```c\n"
+"typedef enum {\n"
+"  META_COMMAND_SUCCESS,\n"
+"  META_COMMAND_UNRECOGNIZED_COMMAND\n"
+"} MetaCommandResult;"
+msgstr ""
+
+#: ../../../_parts/part2.md:69
+msgid "typedef enum { PREPARE_SUCCESS, PREPARE_UNRECOGNIZED_STATEMENT } PrepareResult;\n"
+"```"
+msgstr ""
+
+#: ../../../_parts/part2.md:72
+msgid "\"Unrecognized statement\"? That seems a bit like an exception. But [exceptions are bad](https://www.youtube.com/watch?v=EVhCUSgNbzo) (and C doesn't even support them), so I'm using enum result codes wherever practical. The C compiler will complain if my switch statement doesn't handle a member of the enum, so we can feel a little more confident we handle every result of a function. Expect more result codes to be added in the future."
+msgstr ""
+
+#: ../../../_parts/part2.md:74
+msgid "`do_meta_command` is just a wrapper for existing functionality that leaves room for more commands:"
+msgstr ""
+
+#: ../../../_parts/part2.md:76
+msgid "```c\n"
+"MetaCommandResult do_meta_command(InputBuffer* input_buffer) {\n"
+"  if (strcmp(input_buffer->buffer, \".exit\") == 0) {\n"
+"    exit(EXIT_SUCCESS);\n"
+"  } else {\n"
+"    return META_COMMAND_UNRECOGNIZED_COMMAND;\n"
+"  }\n"
+"}\n"
+"```"
+msgstr ""
+
+#: ../../../_parts/part2.md:86
+msgid "Our \"prepared statement\" right now just contains an enum with two possible values. It will contain more data as we allow parameters in statements:"
+msgstr ""
+
+#: ../../../_parts/part2.md:88
+msgid "```c\n"
+"typedef enum { STATEMENT_INSERT, STATEMENT_SELECT } StatementType;"
+msgstr ""
+
+#: ../../../_parts/part2.md:91
+msgid "typedef struct {\n"
+"  StatementType type;\n"
+"} Statement;\n"
+"```"
+msgstr ""
+
+#: ../../../_parts/part2.md:96
+msgid "`prepare_statement` (our \"SQL Compiler\") does not understand SQL right now. In fact, it only understands two words:\n"
+"```c\n"
+"PrepareResult prepare_statement(InputBuffer* input_buffer,\n"
+"                                Statement* statement) {\n"
+"  if (strncmp(input_buffer->buffer, \"insert\", 6) == 0) {\n"
+"    statement->type = STATEMENT_INSERT;\n"
+"    return PREPARE_SUCCESS;\n"
+"  }\n"
+"  if (strcmp(input_buffer->buffer, \"select\") == 0) {\n"
+"    statement->type = STATEMENT_SELECT;\n"
+"    return PREPARE_SUCCESS;\n"
+"  }"
+msgstr ""
+
+#: ../../../_parts/part2.md:109
+msgid "  return PREPARE_UNRECOGNIZED_STATEMENT;\n"
+"}\n"
+"```"
+msgstr ""
+
+#: ../../../_parts/part2.md:113
+msgid "Note that we use `strncmp` for \"insert\" since the \"insert\" keyword will be followed by data. (e.g. `insert 1 cstack foo@bar.com`)"
+msgstr ""
+
+#: ../../../_parts/part2.md:115
+msgid "Lastly, `execute_statement` contains a few stubs:\n"
+"```c\n"
+"void execute_statement(Statement* statement) {\n"
+"  switch (statement->type) {\n"
+"    case (STATEMENT_INSERT):\n"
+"      printf(\"This is where we would do an insert.\\n\");\n"
+"      break;\n"
+"    case (STATEMENT_SELECT):\n"
+"      printf(\"This is where we would do a select.\\n\");\n"
+"      break;\n"
+"  }\n"
+"}\n"
+"```"
+msgstr ""
+
+#: ../../../_parts/part2.md:129
+msgid "Note that it doesn't return any error codes because there's nothing that could go wrong yet."
+msgstr ""
+
+#: ../../../_parts/part2.md:131
+msgid "With these refactors, we now recognize two new keywords!\n"
+"```command-line\n"
+"~ ./db\n"
+"db > insert foo bar\n"
+"This is where we would do an insert.\n"
+"Executed.\n"
+"db > delete foo\n"
+"Unrecognized keyword at start of 'delete foo'.\n"
+"db > select\n"
+"This is where we would do a select.\n"
+"Executed.\n"
+"db > .tables\n"
+"Unrecognized command '.tables'\n"
+"db > .exit\n"
+"~\n"
+"```"
+msgstr ""
+
+#: ../../../_parts/part2.md:148
+msgid "The skeleton of our database is taking shape... wouldn't it be nice if it stored data? In the next part, we'll implement `insert` and `select`, creating the world's worst data store. In the mean time, here's the entire diff from this part:"
+msgstr ""
+
+#: ../../../_parts/part2.md:150
+msgid "```diff\n"
+"@@ -10,6 +10,23 @@ struct InputBuffer_t {\n"
+" } InputBuffer;"
+msgstr ""
+
+#: ../../../_parts/part2.md:154
+msgid "+typedef enum {\n"
+"+  META_COMMAND_SUCCESS,\n"
+"+  META_COMMAND_UNRECOGNIZED_COMMAND\n"
+"+} MetaCommandResult;\n"
+"+\n"
+"+typedef enum { PREPARE_SUCCESS, PREPARE_UNRECOGNIZED_STATEMENT } PrepareResult;\n"
+"+\n"
+"+typedef enum { STATEMENT_INSERT, STATEMENT_SELECT } StatementType;\n"
+"+\n"
+"+typedef struct {\n"
+"+  StatementType type;\n"
+"+} Statement;\n"
+"+\n"
+" InputBuffer* new_input_buffer() {\n"
+"   InputBuffer* input_buffer = malloc(sizeof(InputBuffer));\n"
+"   input_buffer->buffer = NULL;\n"
+"@@ -40,17 +57,67 @@ void close_input_buffer(InputBuffer* input_buffer) {\n"
+"     free(input_buffer);\n"
+" }"
+msgstr ""
+
+#: ../../../_parts/part2.md:174
+msgid "+MetaCommandResult do_meta_command(InputBuffer* input_buffer) {\n"
+"+  if (strcmp(input_buffer->buffer, \".exit\") == 0) {\n"
+"+    close_input_buffer(input_buffer);\n"
+"+    exit(EXIT_SUCCESS);\n"
+"+  } else {\n"
+"+    return META_COMMAND_UNRECOGNIZED_COMMAND;\n"
+"+  }\n"
+"+}\n"
+"+\n"
+"+PrepareResult prepare_statement(InputBuffer* input_buffer,\n"
+"+                                Statement* statement) {\n"
+"+  if (strncmp(input_buffer->buffer, \"insert\", 6) == 0) {\n"
+"+    statement->type = STATEMENT_INSERT;\n"
+"+    return PREPARE_SUCCESS;\n"
+"+  }\n"
+"+  if (strcmp(input_buffer->buffer, \"select\") == 0) {\n"
+"+    statement->type = STATEMENT_SELECT;\n"
+"+    return PREPARE_SUCCESS;\n"
+"+  }\n"
+"+\n"
+"+  return PREPARE_UNRECOGNIZED_STATEMENT;\n"
+"+}\n"
+"+\n"
+"+void execute_statement(Statement* statement) {\n"
+"+  switch (statement->type) {\n"
+"+    case (STATEMENT_INSERT):\n"
+"+      printf(\"This is where we would do an insert.\\n\");\n"
+"+      break;\n"
+"+    case (STATEMENT_SELECT):\n"
+"+      printf(\"This is where we would do a select.\\n\");\n"
+"+      break;\n"
+"+  }\n"
+"+}\n"
+"+\n"
+" int main(int argc, char* argv[]) {\n"
+"   InputBuffer* input_buffer = new_input_buffer();\n"
+"   while (true) {\n"
+"     print_prompt();\n"
+"     read_input(input_buffer);"
+msgstr ""
+
+#: ../../../_parts/part2.md:214
+msgid "-    if (strcmp(input_buffer->buffer, \".exit\") == 0) {\n"
+"-      close_input_buffer(input_buffer);\n"
+"-      exit(EXIT_SUCCESS);\n"
+"-    } else {\n"
+"-      printf(\"Unrecognized command '%s'.\\n\", input_buffer->buffer);\n"
+"+    if (input_buffer->buffer[0] == '.') {\n"
+"+      switch (do_meta_command(input_buffer)) {\n"
+"+        case (META_COMMAND_SUCCESS):\n"
+"+          continue;\n"
+"+        case (META_COMMAND_UNRECOGNIZED_COMMAND):\n"
+"+          printf(\"Unrecognized command '%s'\\n\", input_buffer->buffer);\n"
+"+          continue;\n"
+"+      }\n"
+"     }\n"
+"+\n"
+"+    Statement statement;\n"
+"+    switch (prepare_statement(input_buffer, &statement)) {\n"
+"+      case (PREPARE_SUCCESS):\n"
+"+        break;\n"
+"+      case (PREPARE_UNRECOGNIZED_STATEMENT):\n"
+"+        printf(\"Unrecognized keyword at start of '%s'.\\n\",\n"
+"+               input_buffer->buffer);\n"
+"+        continue;\n"
+"+    }\n"
+"+\n"
+"+    execute_statement(&statement);\n"
+"+    printf(\"Executed.\\n\");\n"
+"   }\n"
+" }\n"
+"```"
+msgstr ""
+

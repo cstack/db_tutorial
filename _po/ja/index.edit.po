@@ -1,0 +1,67 @@
+# Japanese translations for PACKAGE package.
+# Copyright (C) 2021 THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2021.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2021-11-23 11:24+0900\n"
+"PO-Revision-Date: 2021-11-23 11:24+0900\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: Japanese\n"
+"Language: ja\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=; plural=;\n"
+
+#: ../../README.md:1
+msgid "# Let's Build a Simple Database"
+msgstr "# さあシンプルなデータベースを作りましょう!"
+
+#: ../../README.md:3
+msgid ""
+"[View rendered tutorial](https://cstack.github.io/db_tutorial/) (with more det"
+"ails on what this is.)"
+msgstr ""
+"[ビルド済みのチュートリアル(日本語)](https://cstack.github.io/db_tutorial/) (こちらに、このプロジェクトについて"
+"の詳細があります。)"
+
+#: ../../README.md:5
+msgid "## Notes to myself"
+msgstr ""
+
+#: ../../README.md:7
+msgid ""
+"Run site locally:\n"
+"```\n"
+"bundle exec jekyll serve\n"
+"```"
+msgstr ""
+
+#: ../../README.md:12
+msgid "# シンプルなデータベースを作りましょう!"
+msgstr ""
+
+#: ../../README.md:14
+msgid ""
+"[ビルド済みのチュートリアル(英語版)](https://cstack.github.io/db_tutorial) (このプロジェクトについての詳細がこち"
+"らにあります)"
+msgstr ""
+
+#: ../../README.md:16
+msgid "## ビルドするための備忘録"
+msgstr ""
+
+#: ../../README.md:18
+msgid ""
+"本プロジェクトの日本語は[jekyll-task-i18n](https://github.com/ruby-gettext/jekyll-task-i18"
+"n)を用いて、日本語化しました。  \n"
+"ローカルで実行する方法:\n"
+"```\n"
+"rake\n"
+"bundle exec jekyll serve\n"
+"```"
+msgstr ""

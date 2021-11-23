@@ -2,3 +2,5 @@ db
 *.db
 _site/
 TODO
+ja/
+!/_po/ja/

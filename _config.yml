@@ -11,3 +11,4 @@ defaults:
       type: parts
     values:
       layout: default
+exclude: ["Gemfile", "Gemfile.lock", "Rakefile"]

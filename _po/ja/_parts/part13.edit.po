@@ -1,0 +1,427 @@
+# Japanese translations for PACKAGE package.
+# Copyright (C) 2021 THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2021.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2021-11-23 11:24+0900\n"
+"PO-Revision-Date: 2021-11-23 11:24+0900\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: Japanese\n"
+"Language: ja\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=; plural=;\n"
+
+#: ../../../_parts/part13.md:1
+msgid ""
+"---\n"
+"title: Part 13 - Updating Parent Node After a Split\n"
+"date: 2017-11-26\n"
+"---"
+msgstr ""
+
+#: ../../../_parts/part13.md:6
+msgid "For the next step on our epic b-tree implementation journey, we're going to handle fixing up the parent node after splitting a leaf. I'm going to use the following example as a reference:"
+msgstr ""
+
+#: ../../../_parts/part13.md:8
+msgid "{% include image.html url=\"assets/images/updating-internal-node.png\" description=\"Example of updating internal node\" %}"
+msgstr ""
+
+#: ../../../_parts/part13.md:10
+msgid "In this example, we add the key \"3\" to the tree. That causes the left leaf node to split. After the split we fix up the tree by doing the following:"
+msgstr ""
+
+#: ../../../_parts/part13.md:12
+msgid ""
+"1. Update the first key in the parent to be the maximum key in the left child (\"3\")\n"
+"2. Add a new child pointer / key pair after the updated key\n"
+"  - The new pointer points to the new child node\n"
+"  - The new key is the maximum key in the new child node (\"5\")"
+msgstr ""
+
+#: ../../../_parts/part13.md:17
+msgid "So first things first, replace our stub code with two new function calls: `update_internal_node_key()` for step 1 and `internal_node_insert()` for step 2"
+msgstr ""
+
+#: ../../../_parts/part13.md:20
+msgid ""
+"```diff\n"
+"@@ -670,9 +725,11 @@ void leaf_node_split_and_insert(Cursor* cursor, uint32_t key, Row* value) {\n"
+"   */"
+msgstr ""
+
+#: ../../../_parts/part13.md:24
+msgid ""
+"   void* old_node = get_page(cursor->table->pager, cursor->page_num);\n"
+"+  uint32_t old_max = get_node_max_key(old_node);\n"
+"   uint32_t new_page_num = get_unused_page_num(cursor->table->pager);\n"
+"   void* new_node = get_page(cursor->table->pager, new_page_num);\n"
+"   initialize_leaf_node(new_node);\n"
+"+  *node_parent(new_node) = *node_parent(old_node);\n"
+"   *leaf_node_next_leaf(new_node) = *leaf_node_next_leaf(old_node);\n"
+"   *leaf_node_next_leaf(old_node) = new_page_num;"
+msgstr ""
+
+#: ../../../_parts/part13.md:33
+msgid ""
+"@@ -709,8 +766,12 @@ void leaf_node_split_and_insert(Cursor* cursor, uint32_t key, Row* value) {\n"
+"   if (is_node_root(old_node)) {\n"
+"     return create_new_root(cursor->table, new_page_num);\n"
+"   } else {\n"
+"-    printf(\"Need to implement updating parent after split\n"
+"\");\n"
+"-    exit(EXIT_FAILURE);\n"
+"+    uint32_t parent_page_num = *node_parent(old_node);\n"
+"+    uint32_t new_max = get_node_max_key(old_node);\n"
+"+    void* parent = get_page(cursor->table->pager, parent_page_num);\n"
+"+\n"
+"+    update_internal_node_key(parent, old_max, new_max);\n"
+"+    internal_node_insert(cursor->table, parent_page_num, new_page_num);\n"
+"+    return;\n"
+"   }\n"
+" }\n"
+"```"
+msgstr ""
+
+#: ../../../_parts/part13.md:50
+msgid "In order to get a reference to the parent, we need to start recording in each node a pointer to its parent node."
+msgstr ""
+
+#: ../../../_parts/part13.md:52
+msgid ""
+"```diff\n"
+"+uint32_t* node_parent(void* node) { return node + PARENT_POINTER_OFFSET; }\n"
+"```\n"
+"```diff\n"
+"@@ -660,6 +675,48 @@ void create_new_root(Table* table, uint32_t right_child_page_num) {\n"
+"   uint32_t left_child_max_key = get_node_max_key(left_child);\n"
+"   *internal_node_key(root, 0) = left_child_max_key;\n"
+"   *internal_node_right_child(root) = right_child_page_num;\n"
+"+  *node_parent(left_child) = table->root_page_num;\n"
+"+  *node_parent(right_child) = table->root_page_num;\n"
+" }\n"
+"```"
+msgstr ""
+
+#: ../../../_parts/part13.md:65
+msgid "Now we need to find the affected cell in the parent node. The child doesn't know its own page number, so we can't look for that. But it does know its own maximum key, so we can search the parent for that key."
+msgstr ""
+
+#: ../../../_parts/part13.md:67
+msgid ""
+"```diff\n"
+"+void update_internal_node_key(void* node, uint32_t old_key, uint32_t new_key) {\n"
+"+  uint32_t old_child_index = internal_node_find_child(node, old_key);\n"
+"+  *internal_node_key(node, old_child_index) = new_key;\n"
+" }\n"
+"```"
+msgstr ""
+
+#: ../../../_parts/part13.md:74
+msgid "Inside `internal_node_find_child()` we'll reuse some code we already have for finding a key in an internal node. Refactor `internal_node_find()` to use the new helper method."
+msgstr ""
+
+#: ../../../_parts/part13.md:76
+msgid ""
+"```diff\n"
+"-Cursor* internal_node_find(Table* table, uint32_t page_num, uint32_t key) {\n"
+"-  void* node = get_page(table->pager, page_num);\n"
+"+uint32_t internal_node_find_child(void* node, uint32_t key) {\n"
+"+  /*\n"
+"+  Return the index of the child which should contain\n"
+"+  the given key.\n"
+"+  */\n"
+"+\n"
+"   uint32_t num_keys = *internal_node_num_keys(node);"
+msgstr ""
+
+#: ../../../_parts/part13.md:87
+msgid ""
+"-  /* Binary search to find index of child to search */\n"
+"+  /* Binary search */\n"
+"   uint32_t min_index = 0;\n"
+"   uint32_t max_index = num_keys; /* there is one more child than key */"
+msgstr ""
+
+#: ../../../_parts/part13.md:92
+msgid ""
+"@@ -386,7 +394,14 @@ Cursor* internal_node_find(Table* table, uint32_t page_num, uint32_t key) {\n"
+"     }\n"
+"   }"
+msgstr ""
+
+#: ../../../_parts/part13.md:96
+msgid ""
+"-  uint32_t child_num = *internal_node_child(node, min_index);\n"
+"+  return min_index;\n"
+"+}\n"
+"+\n"
+"+Cursor* internal_node_find(Table* table, uint32_t page_num, uint32_t key) {\n"
+"+  void* node = get_page(table->pager, page_num);\n"
+"+\n"
+"+  uint32_t child_index = internal_node_find_child(node, key);\n"
+"+  uint32_t child_num = *internal_node_child(node, child_index);\n"
+"   void* child = get_page(table->pager, child_num);\n"
+"   switch (get_node_type(child)) {\n"
+"     case NODE_LEAF:\n"
+"```"
+msgstr ""
+
+#: ../../../_parts/part13.md:110
+msgid "Now we get to the heart of this article, implementing `internal_node_insert()`. I'll explain it in pieces."
+msgstr ""
+
+#: ../../../_parts/part13.md:112
+msgid ""
+"```diff\n"
+"+void internal_node_insert(Table* table, uint32_t parent_page_num,\n"
+"+                          uint32_t child_page_num) {\n"
+"+  /*\n"
+"+  Add a new child/key pair to parent that corresponds to child\n"
+"+  */\n"
+"+\n"
+"+  void* parent = get_page(table->pager, parent_page_num);\n"
+"+  void* child = get_page(table->pager, child_page_num);\n"
+"+  uint32_t child_max_key = get_node_max_key(child);\n"
+"+  uint32_t index = internal_node_find_child(parent, child_max_key);\n"
+"+\n"
+"+  uint32_t original_num_keys = *internal_node_num_keys(parent);\n"
+"+  *internal_node_num_keys(parent) = original_num_keys + 1;\n"
+"+\n"
+"+  if (original_num_keys >= INTERNAL_NODE_MAX_CELLS) {\n"
+"+    printf(\"Need to implement splitting internal node\n"
+"\");\n"
+"+    exit(EXIT_FAILURE);\n"
+"+  }\n"
+"```"
+msgstr ""
+
+#: ../../../_parts/part13.md:133
+msgid "The index where the new cell (child/key pair) should be inserted depends on the maximum key in the new child. In the example we looked at, `child_max_key` would be 5 and `index` would be 1."
+msgstr ""
+
+#: ../../../_parts/part13.md:135
+msgid "If there's no room in the internal node for another cell, throw an error. We'll implement that later."
+msgstr ""
+
+#: ../../../_parts/part13.md:137
+msgid "Now let's look at the rest of the function:"
+msgstr ""
+
+#: ../../../_parts/part13.md:139
+msgid ""
+"```diff\n"
+"+\n"
+"+  uint32_t right_child_page_num = *internal_node_right_child(parent);\n"
+"+  void* right_child = get_page(table->pager, right_child_page_num);\n"
+"+\n"
+"+  if (child_max_key > get_node_max_key(right_child)) {\n"
+"+    /* Replace right child */\n"
+"+    *internal_node_child(parent, original_num_keys) = right_child_page_num;\n"
+"+    *internal_node_key(parent, original_num_keys) =\n"
+"+        get_node_max_key(right_child);\n"
+"+    *internal_node_right_child(parent) = child_page_num;\n"
+"+  } else {\n"
+"+    /* Make room for the new cell */\n"
+"+    for (uint32_t i = original_num_keys; i > index; i--) {\n"
+"+      void* destination = internal_node_cell(parent, i);\n"
+"+      void* source = internal_node_cell(parent, i - 1);\n"
+"+      memcpy(destination, source, INTERNAL_NODE_CELL_SIZE);\n"
+"+    }\n"
+"+    *internal_node_child(parent, index) = child_page_num;\n"
+"+    *internal_node_key(parent, index) = child_max_key;\n"
+"+  }\n"
+"+}\n"
+"```"
+msgstr ""
+
+#: ../../../_parts/part13.md:163
+msgid "Because we store the rightmost child pointer separately from the rest of the child/key pairs, we have to handle things differently if the new child is going to become the rightmost child."
+msgstr ""
+
+#: ../../../_parts/part13.md:165
+msgid "In our example, we would get into the `else` block. First we make room for the new cell by shifting other cells one space to the right. (Although in our example there are 0 cells to shift)"
+msgstr ""
+
+#: ../../../_parts/part13.md:167
+msgid "Next, we write the new child pointer and key into the cell determined by `index`."
+msgstr ""
+
+#: ../../../_parts/part13.md:169
+msgid "To reduce the size of testcases needed, I'm hardcoding `INTERNAL_NODE_MAX_CELLS` for now"
+msgstr ""
+
+#: ../../../_parts/part13.md:171
+msgid ""
+"```diff\n"
+"@@ -126,6 +126,8 @@ const uint32_t INTERNAL_NODE_KEY_SIZE = sizeof(uint32_t);\n"
+" const uint32_t INTERNAL_NODE_CHILD_SIZE = sizeof(uint32_t);\n"
+" const uint32_t INTERNAL_NODE_CELL_SIZE =\n"
+"     INTERNAL_NODE_CHILD_SIZE + INTERNAL_NODE_KEY_SIZE;\n"
+"+/* Keep this small for testing */\n"
+"+const uint32_t INTERNAL_NODE_MAX_CELLS = 3;\n"
+"```"
+msgstr ""
+
+#: ../../../_parts/part13.md:180
+msgid "Speaking of tests, our large-dataset test gets past our old stub and gets to our new one:"
+msgstr ""
+
+#: ../../../_parts/part13.md:182
+msgid ""
+"```diff\n"
+"@@ -65,7 +65,7 @@ describe 'database' do\n"
+"     result = run_script(script)\n"
+"     expect(result.last(2)).to match_array([\n"
+"       \"db > Executed.\",\n"
+"-      \"db > Need to implement updating parent after split\",\n"
+"+      \"db > Need to implement splitting internal node\",\n"
+"     ])\n"
+"```"
+msgstr ""
+
+#: ../../../_parts/part13.md:192
+msgid "Very satisfying, I know."
+msgstr ""
+
+#: ../../../_parts/part13.md:194
+msgid "I'll add another test that prints a four-node tree. Just so we test more cases than sequential ids, this test will add records in a pseudorandom order."
+msgstr ""
+
+#: ../../../_parts/part13.md:196
+msgid ""
+"```diff\n"
+"+  it 'allows printing out the structure of a 4-leaf-node btree' do\n"
+"+    script = [\n"
+"+      \"insert 18 user18 person18@example.com\",\n"
+"+      \"insert 7 user7 person7@example.com\",\n"
+"+      \"insert 10 user10 person10@example.com\",\n"
+"+      \"insert 29 user29 person29@example.com\",\n"
+"+      \"insert 23 user23 person23@example.com\",\n"
+"+      \"insert 4 user4 person4@example.com\",\n"
+"+      \"insert 14 user14 person14@example.com\",\n"
+"+      \"insert 30 user30 person30@example.com\",\n"
+"+      \"insert 15 user15 person15@example.com\",\n"
+"+      \"insert 26 user26 person26@example.com\",\n"
+"+      \"insert 22 user22 person22@example.com\",\n"
+"+      \"insert 19 user19 person19@example.com\",\n"
+"+      \"insert 2 user2 person2@example.com\",\n"
+"+      \"insert 1 user1 person1@example.com\",\n"
+"+      \"insert 21 user21 person21@example.com\",\n"
+"+      \"insert 11 user11 person11@example.com\",\n"
+"+      \"insert 6 user6 person6@example.com\",\n"
+"+      \"insert 20 user20 person20@example.com\",\n"
+"+      \"insert 5 user5 person5@example.com\",\n"
+"+      \"insert 8 user8 person8@example.com\",\n"
+"+      \"insert 9 user9 person9@example.com\",\n"
+"+      \"insert 3 user3 person3@example.com\",\n"
+"+      \"insert 12 user12 person12@example.com\",\n"
+"+      \"insert 27 user27 person27@example.com\",\n"
+"+      \"insert 17 user17 person17@example.com\",\n"
+"+      \"insert 16 user16 person16@example.com\",\n"
+"+      \"insert 13 user13 person13@example.com\",\n"
+"+      \"insert 24 user24 person24@example.com\",\n"
+"+      \"insert 25 user25 person25@example.com\",\n"
+"+      \"insert 28 user28 person28@example.com\",\n"
+"+      \".btree\",\n"
+"+      \".exit\",\n"
+"+    ]\n"
+"+    result = run_script(script)\n"
+"```"
+msgstr ""
+
+#: ../../../_parts/part13.md:235
+msgid "As-is, it will output this:"
+msgstr ""
+
+#: ../../../_parts/part13.md:237
+msgid ""
+"```\n"
+"- internal (size 3)\n"
+"  - leaf (size 7)\n"
+"    - 1\n"
+"    - 2\n"
+"    - 3\n"
+"    - 4\n"
+"    - 5\n"
+"    - 6\n"
+"    - 7\n"
+"  - key 1\n"
+"  - leaf (size 8)\n"
+"    - 8\n"
+"    - 9\n"
+"    - 10\n"
+"    - 11\n"
+"    - 12\n"
+"    - 13\n"
+"    - 14\n"
+"    - 15\n"
+"  - key 15\n"
+"  - leaf (size 7)\n"
+"    - 16\n"
+"    - 17\n"
+"    - 18\n"
+"    - 19\n"
+"    - 20\n"
+"    - 21\n"
+"    - 22\n"
+"  - key 22\n"
+"  - leaf (size 8)\n"
+"    - 23\n"
+"    - 24\n"
+"    - 25\n"
+"    - 26\n"
+"    - 27\n"
+"    - 28\n"
+"    - 29\n"
+"    - 30\n"
+"db >\n"
+"```"
+msgstr ""
+
+#: ../../../_parts/part13.md:279
+msgid ""
+"Look carefully and you'll spot a bug:\n"
+"```\n"
+"    - 5\n"
+"    - 6\n"
+"    - 7\n"
+"  - key 1\n"
+"```"
+msgstr ""
+
+#: ../../../_parts/part13.md:287
+msgid "The key there should be 7, not 1!"
+msgstr ""
+
+#: ../../../_parts/part13.md:289
+msgid "After a bunch of debugging, I discovered this was due to some bad pointer arithmetic."
+msgstr ""
+
+#: ../../../_parts/part13.md:291
+msgid ""
+"```diff\n"
+" uint32_t* internal_node_key(void* node, uint32_t key_num) {\n"
+"-  return internal_node_cell(node, key_num) + INTERNAL_NODE_CHILD_SIZE;\n"
+"+  return (void*)internal_node_cell(node, key_num) + INTERNAL_NODE_CHILD_SIZE;\n"
+" }\n"
+"```"
+msgstr ""
+
+#: ../../../_parts/part13.md:298
+msgid "`INTERNAL_NODE_CHILD_SIZE` is 4. My intention here was to add 4 bytes to the result of `internal_node_cell()`, but since `internal_node_cell()` returns a `uint32_t*`, this it was actually adding `4 * sizeof(uint32_t)` bytes. I fixed it by casting to a `void*` before doing the arithmetic."
+msgstr ""
+
+#: ../../../_parts/part13.md:300
+msgid "NOTE! [Pointer arithmetic on void pointers is not part of the C standard and may not work with your compiler](https://stackoverflow.com/questions/3523145/pointer-arithmetic-for-void-pointer-in-c/46238658#46238658). I may do an article in the future on portability, but I'm leaving my void pointer arithmetic for now."
+msgstr ""
+
+#: ../../../_parts/part13.md:302
+msgid "Alright. One more step toward a fully-operational btree implementation. The next step should be splitting internal nodes. Until then!"
+msgstr ""

@@ -1,0 +1,337 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2021-11-23 11:31+0900\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: ../../../_parts/japanese_part1.md:1
+msgid "---\n"
+"title: パート1 - イントロダクションとREPLのセットアップ\n"
+"date: 2017-08-30\n"
+"---"
+msgstr ""
+
+#: ../../../_parts/japanese_part1.md:6
+msgid "web開発者として、[私](https://github.com/cstack)はデータベースを毎日使います。しかしデータベースの中身がブラックボックスのように感じます。いくつか不思議に思っていることがあります。:\n"
+"- データは(メモリと外部記憶装置などにおいて)どのようにして保存されるのでしょうか?\n"
+"- いつデータはメモリから外部記憶装置に移されるのでしょうか?\n"
+"- なぜテーブルごとのキーは一意なのでしょうか?\n"
+"- トランザクションのローリングバックの仕組みはどのようなものなのでしょうか?\n"
+"- インデックスのフォーマットの仕組みはどのようなものでしょうか?\n"
+"- いつ、どんな感じで、テーブルが満タンになったとき何が起きるのでしょうか?\n"
+"- プリペアドステートメントはどのようなフォーマットで保存されるのでしょうか?"
+msgstr ""
+
+#: ../../../_parts/japanese_part1.md:15
+msgid "手短に言うと、どのようにしてデータベースは**動くのでしょうか?**"
+msgstr ""
+
+#: ../../../_parts/japanese_part1.md:17
+msgid "これらの謎を解くために、私はデータベースをフルスクラッチで作っています。MySQLやPostgreSQLといったものよりも軽量で、機能も少ないためsqliteをモデルにしました。なので、データベースをより理解しやすくなったと思っています。実はデータベースは一つのファイルに、保存されているのです!"
+msgstr ""
+
+#: ../../../_parts/japanese_part1.md:19
+msgid "# Sqlite"
+msgstr ""
+
+#: ../../../_parts/japanese_part1.md:21
+msgid "[sqliteの仕組み](https://www.sqlite.org/arch.html)がsqliteのサイトにあり, そして私は[SQLite Database System: Design and Implementation](https://play.google.com/store/books/details?id=9Z6IQQnX1JEC)という電子書籍を持っています。"
+msgstr ""
+
+#: ../../../_parts/japanese_part1.md:23
+msgid "{% include image.html url=\"assets/images/arch1.gif\" description=\"sqliteの構造(https://www.sqlite.org/zipvfs/doc/trunk/www/howitworks.wiki)\" %}"
+msgstr ""
+
+#: ../../../_parts/japanese_part1.md:25
+msgid "クエリは以下のような手順で、取得や変更したデータを解析しています。**フロントエンド** はこれらの要素から構成されています。:\n"
+"- 字句解析(tokenizer)\n"
+"- パーサー(parser)\n"
+"- コード生成"
+msgstr ""
+
+#: ../../../_parts/japanese_part1.md:30
+msgid "SQLクエリがフロントエンドに入力された時、出力はsqliteの仮想マシンの中間コードへ変換されます。(データベースを操作するには、コンパイルされたプログラムが必要なのです。)"
+msgstr ""
+
+#: ../../../_parts/japanese_part1.md:32
+msgid "_バックエンド_ はこれらの要素から成り立っています:\n"
+"- 仮想マシン\n"
+"- B木\n"
+"- ページャー\n"
+"- OSインターフェース"
+msgstr ""
+
+#: ../../../_parts/japanese_part1.md:38
+msgid "**仮想マシン**はフロントエンドの段階で生成されたバイトコードを使用します。B木と呼ばれるデータ構造にそれぞれのデータは保存され、多数のテーブルやインデックスを操作します。仮想マシンはバイトコードの実行を切り替えるのに必要です。"
+msgstr ""
+
+#: ../../../_parts/japanese_part1.md:40
+msgid "**B木**は多くのノードから成り立っています。それらは一つのページに収められています。B木はページャーにディスクに戻す命令を発行し、ディスクからページを取得したり保存します。"
+msgstr ""
+
+#: ../../../_parts/japanese_part1.md:42
+msgid "**ページャー**はデータを読み書きする命令を出します。ページャーはデータベースを適切なオフセットで読み書きします。ページャーはメモリに最近使用したページのキャッシュを保存し、ディスクにページを書き戻す時に使用されます。"
+msgstr ""
+
+#: ../../../_parts/japanese_part1.md:44
+msgid "**os interface**はsqliteがコンパイルされたOSによって異なります。このチュートリアルは、様々なプラットフォームをサポートします。"
+msgstr ""
+
+#: ../../../_parts/japanese_part1.md:46
+msgid "[千里の道は一歩から!](https://ja.wiktionary.org/wiki/%E5%8D%83%E9%87%8C%E3%81%AE%E9%81%93%E3%82%82%E4%B8%80%E6%AD%A9%E3%81%8B%E3%82%89)、簡単なところから始めましょう!:REPL"
+msgstr ""
+
+#: ../../../_parts/japanese_part1.md:48
+msgid "## シンプルなREPLを作ってみよう!"
+msgstr ""
+
+#: ../../../_parts/japanese_part1.md:50
+msgid "Sqliteはコマンドラインから起動すると、REPLになります。:"
+msgstr ""
+
+#: ../../../_parts/japanese_part1.md:52
+msgid "```shell\n"
+"~ sqlite3\n"
+"SQLite version 3.16.0 2016-11-04 19:09:39\n"
+"Enter \".help\" for usage hints.\n"
+"Connected to a transient in-memory database.\n"
+"Use \".open FILENAME\" to reopen on a persistent database.\n"
+"sqlite> create table users (id int, username varchar(255), email varchar(255));\n"
+"sqlite> .tables\n"
+"users\n"
+"sqlite> .exit\n"
+"~\n"
+"```"
+msgstr ""
+
+#: ../../../_parts/japanese_part1.md:65
+msgid "このような処理を行うため、メイン関数は、プロンプトを表示して、入力を読み込み、それを処理する無限ループへ入ります。:"
+msgstr ""
+
+#: ../../../_parts/japanese_part1.md:67
+msgid "```c\n"
+"int main(int argc, char* argv[]) {\n"
+"  InputBuffer* input_buffer = new_input_buffer();\n"
+"  while (true) {\n"
+"    print_prompt();\n"
+"    read_input(input_buffer);"
+msgstr ""
+
+#: ../../../_parts/japanese_part1.md:74
+#: ../../../_parts/japanese_part1.md:222
+msgid "    if (strcmp(input_buffer->buffer, \".exit\") == 0) {\n"
+"      close_input_buffer(input_buffer);\n"
+"      exit(EXIT_SUCCESS);\n"
+"    } else {\n"
+"      printf(\"Unrecognized command '%s'.\\n\", input_buffer->buffer);\n"
+"    }\n"
+"  }\n"
+"}\n"
+"```"
+msgstr ""
+
+#: ../../../_parts/japanese_part1.md:84
+msgid "`InputBuffer`を[getline()](https://manpages.debian.org/unstable/manpages-ja-dev/getline.3.ja.html)関数で、保存するためのラッパー変数として使用します。(このことについて、後程述べたいと思います。)\n"
+"```c\n"
+"typedef struct {\n"
+"  char* buffer;\n"
+"  size_t buffer_length;\n"
+"  ssize_t input_length;\n"
+"} InputBuffer;"
+msgstr ""
+
+#: ../../../_parts/japanese_part1.md:92
+msgid "InputBuffer* new_input_buffer() {\n"
+"  InputBuffer* input_buffer = (InputBuffer*)malloc(sizeof(InputBuffer));\n"
+"  input_buffer->buffer = NULL;\n"
+"  input_buffer->buffer_length = 0;\n"
+"  input_buffer->input_length = 0;"
+msgstr ""
+
+#: ../../../_parts/japanese_part1.md:98
+msgid "  return input_buffer;\n"
+"}\n"
+"```"
+msgstr ""
+
+#: ../../../_parts/japanese_part1.md:102
+msgid "次に、`print_prompt()`はユーザーにプロンプトを表示する関数です。入力を読み取る前にこれを実行します。"
+msgstr ""
+
+#: ../../../_parts/japanese_part1.md:104
+msgid "```c\n"
+"void print_prompt() { printf(\"db > \"); }\n"
+"```"
+msgstr ""
+
+#: ../../../_parts/japanese_part1.md:108
+msgid "入力されたものを読み込むため、[getline()](https://manpages.debian.org/unstable/manpages-ja-dev/getline.3.ja.html)関数を使います。:\n"
+"```c\n"
+"ssize_t getline(char **lineptr, size_t *n, FILE *stream);\n"
+"```\n"
+"`lineptr` : は読み込んだものを保存しているバッファを指し示すポインタ変数です。もし`NULL`が設定されていれば、`getline`によって割り当てられた時、コマンドが失敗したとしても、ユーザーは明示的に解放する必要があります。"
+msgstr ""
+
+#: ../../../_parts/japanese_part1.md:114
+msgid "`n` : 割り当てられたバッファサイズを保存するポインタ変数です。"
+msgstr ""
+
+#: ../../../_parts/japanese_part1.md:116
+msgid "`stream` : 入力ストリームから読み込んだ変数を表しています。標準入力から読み込まれます。"
+msgstr ""
+
+#: ../../../_parts/japanese_part1.md:118
+msgid "`return value` : これの戻り値は読み込んだバイト数を表していて、バッファのサイズより小さいときもあります。"
+msgstr ""
+
+#: ../../../_parts/japanese_part1.md:120
+msgid "`getline`は読み込んだ行を`input_buffer->buffer`保存し、割り当てられたバッファのサイズを`input_buffer->buffer_length`に保存します。戻り値を`input_buffer->input_length`に保存します。"
+msgstr ""
+
+#: ../../../_parts/japanese_part1.md:122
+msgid "`buffer`はNULLで始まるため、`getline`は、入力したものを保存するために必要なメモリを割り当てて、`buffer`がそれを指し示します。"
+msgstr ""
+
+#: ../../../_parts/japanese_part1.md:124
+msgid "```c\n"
+"void read_input(InputBuffer* input_buffer) {\n"
+"  ssize_t bytes_read =\n"
+"      getline(&(input_buffer->buffer), &(input_buffer->buffer_length), stdin);"
+msgstr ""
+
+#: ../../../_parts/japanese_part1.md:129
+#: ../../../_parts/japanese_part1.md:201
+msgid "  if (bytes_read <= 0) {\n"
+"    printf(\"Error reading input\\n\");\n"
+"    exit(EXIT_FAILURE);\n"
+"  }"
+msgstr ""
+
+#: ../../../_parts/japanese_part1.md:134
+msgid "  // 最後の行の改行を無視する\n"
+"  input_buffer->input_length = bytes_read - 1;\n"
+"  input_buffer->buffer[bytes_read - 1] = 0;\n"
+"}\n"
+"```"
+msgstr ""
+
+#: ../../../_parts/japanese_part1.md:140
+msgid "ここで、`InputBuffer *`のインスタンス変数と`buffer`の要素のメモリを\n"
+"解放する関数が必要です。\n"
+"(`getline`は`read_input`の中の`input_buffer->buffer`へメモリを割り当てます。\n"
+")。"
+msgstr ""
+
+#: ../../../_parts/japanese_part1.md:145
+msgid "```c\n"
+"void close_input_buffer(InputBuffer* input_buffer) {\n"
+"    free(input_buffer->buffer);\n"
+"    free(input_buffer);\n"
+"}\n"
+"```"
+msgstr ""
+
+#: ../../../_parts/japanese_part1.md:152
+msgid "最後に、私たちはパースして、コマンドを実行します。たった一つの今すぐ実行できるコマンドがあります。: `.exit`それはプログラムを終了するというコマンドです。さもなければ、私たちはエラーを出力して、ループを継続します。"
+msgstr ""
+
+#: ../../../_parts/japanese_part1.md:154
+msgid "```c\n"
+"if (strcmp(input_buffer->buffer, \".exit\") == 0) {\n"
+"  close_input_buffer(input_buffer);\n"
+"  exit(EXIT_SUCCESS);\n"
+"} else {\n"
+"  printf(\"Unrecognized command '%s'.\\n\", input_buffer->buffer);\n"
+"}\n"
+"```"
+msgstr ""
+
+#: ../../../_parts/japanese_part1.md:163
+msgid "試してみましょう!\n"
+"```shell\n"
+"~ ./db\n"
+"db > .tables\n"
+"'.tables'は認識できません\n"
+"db > .exit\n"
+"~\n"
+"```"
+msgstr ""
+
+#: ../../../_parts/japanese_part1.md:172
+msgid "さて、動作できるREPLを完成させました!次のパートでは、オリジナルのコマンドライン言語を開発します。さて、今まで作成したプログラムの全体図を示します。:"
+msgstr ""
+
+#: ../../../_parts/japanese_part1.md:174
+msgid "```c\n"
+"#include <stdbool.h>\n"
+"#include <stdio.h>\n"
+"#include <stdlib.h>\n"
+"#include <string.h>"
+msgstr ""
+
+#: ../../../_parts/japanese_part1.md:180
+msgid "typedef struct {\n"
+"  char* buffer;\n"
+"  size_t buffer_length;\n"
+"  ssize_t input_length;\n"
+"} InputBuffer;"
+msgstr ""
+
+#: ../../../_parts/japanese_part1.md:186
+msgid "InputBuffer* new_input_buffer() {\n"
+"  InputBuffer* input_buffer = malloc(sizeof(InputBuffer));\n"
+"  input_buffer->buffer = NULL;\n"
+"  input_buffer->buffer_length = 0;\n"
+"  input_buffer->input_length = 0;"
+msgstr ""
+
+#: ../../../_parts/japanese_part1.md:192
+msgid "  return input_buffer;\n"
+"}"
+msgstr ""
+
+#: ../../../_parts/japanese_part1.md:195
+msgid "void print_prompt() { printf(\"db > \"); }"
+msgstr ""
+
+#: ../../../_parts/japanese_part1.md:197
+msgid "void read_input(InputBuffer* input_buffer) {\n"
+"  ssize_t bytes_read =\n"
+"      getline(&(input_buffer->buffer), &(input_buffer->buffer_length), stdin);"
+msgstr ""
+
+#: ../../../_parts/japanese_part1.md:206
+msgid "  // 最後の行の改行を無視する\n"
+"  input_buffer->input_length = bytes_read - 1;\n"
+"  input_buffer->buffer[bytes_read - 1] = 0;\n"
+"}"
+msgstr ""
+
+#: ../../../_parts/japanese_part1.md:211
+msgid "void close_input_buffer(InputBuffer* input_buffer) {\n"
+"    free(input_buffer->buffer);\n"
+"    free(input_buffer);\n"
+"}"
+msgstr ""
+
+#: ../../../_parts/japanese_part1.md:216
+msgid "int main(int argc, char* argv[]) {\n"
+"  InputBuffer* input_buffer = new_input_buffer();\n"
+"  while (true) {\n"
+"    print_prompt();\n"
+"    read_input(input_buffer);"
+msgstr ""
+

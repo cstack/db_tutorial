@@ -1,0 +1,310 @@
+# Japanese translations for PACKAGE package.
+# Copyright (C) 2021 THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2021.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2021-11-23 11:24+0900\n"
+"PO-Revision-Date: 2021-11-23 11:24+0900\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: Japanese\n"
+"Language: ja\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=; plural=;\n"
+
+#: ../../../_parts/part6.md:1
+msgid ""
+"---\n"
+"title: Part 6 - The Cursor Abstraction\n"
+"date: 2017-09-10\n"
+"---"
+msgstr ""
+
+#: ../../../_parts/part6.md:6
+msgid "This should be a shorter part than the last one. We're just going to refactor a bit to make it easier to start the B-Tree implementation."
+msgstr ""
+
+#: ../../../_parts/part6.md:8
+msgid "We're going to add a `Cursor` object which represents a location in the table. Things you might want to do with cursors:"
+msgstr ""
+
+#: ../../../_parts/part6.md:10
+msgid ""
+"- Create a cursor at the beginning of the table\n"
+"- Create a cursor at the end of the table\n"
+"- Access the row the cursor is pointing to\n"
+"- Advance the cursor to the next row"
+msgstr ""
+
+#: ../../../_parts/part6.md:15
+msgid "Those are the behaviors we're going to implement now. Later, we will also want to:"
+msgstr ""
+
+#: ../../../_parts/part6.md:17
+msgid ""
+"- Delete the row pointed to by a cursor\n"
+"- Modify the row pointed to by a cursor\n"
+"- Search a table for a given ID, and create a cursor pointing to the row with that ID"
+msgstr ""
+
+#: ../../../_parts/part6.md:21
+msgid "Without further ado, here's the `Cursor` type:"
+msgstr ""
+
+#: ../../../_parts/part6.md:23
+msgid ""
+"```diff\n"
+"+typedef struct {\n"
+"+  Table* table;\n"
+"+  uint32_t row_num;\n"
+"+  bool end_of_table;  // Indicates a position one past the last element\n"
+"+} Cursor;\n"
+"```"
+msgstr ""
+
+#: ../../../_parts/part6.md:31
+msgid "Given our current table data structure, all you need to identify a location in a table is the row number."
+msgstr ""
+
+#: ../../../_parts/part6.md:33
+msgid "A cursor also has a reference to the table it's part of (so our cursor functions can take just the cursor as a parameter)."
+msgstr ""
+
+#: ../../../_parts/part6.md:35
+msgid "Finally, it has a boolean called `end_of_table`. This is so we can represent a position past the end of the table (which is somewhere we may want to insert a row)."
+msgstr ""
+
+#: ../../../_parts/part6.md:37
+msgid "`table_start()` and `table_end()` create new cursors:"
+msgstr ""
+
+#: ../../../_parts/part6.md:39
+msgid ""
+"```diff\n"
+"+Cursor* table_start(Table* table) {\n"
+"+  Cursor* cursor = malloc(sizeof(Cursor));\n"
+"+  cursor->table = table;\n"
+"+  cursor->row_num = 0;\n"
+"+  cursor->end_of_table = (table->num_rows == 0);\n"
+"+\n"
+"+  return cursor;\n"
+"+}\n"
+"+\n"
+"+Cursor* table_end(Table* table) {\n"
+"+  Cursor* cursor = malloc(sizeof(Cursor));\n"
+"+  cursor->table = table;\n"
+"+  cursor->row_num = table->num_rows;\n"
+"+  cursor->end_of_table = true;\n"
+"+\n"
+"+  return cursor;\n"
+"+}\n"
+"```"
+msgstr ""
+
+#: ../../../_parts/part6.md:59
+msgid "Our `row_slot()` function will become `cursor_value()`, which returns a pointer to the position described by the cursor:"
+msgstr ""
+
+#: ../../../_parts/part6.md:61
+msgid ""
+"```diff\n"
+"-void* row_slot(Table* table, uint32_t row_num) {\n"
+"+void* cursor_value(Cursor* cursor) {\n"
+"+  uint32_t row_num = cursor->row_num;\n"
+"   uint32_t page_num = row_num / ROWS_PER_PAGE;\n"
+"-  void* page = get_page(table->pager, page_num);\n"
+"+  void* page = get_page(cursor->table->pager, page_num);\n"
+"   uint32_t row_offset = row_num % ROWS_PER_PAGE;\n"
+"   uint32_t byte_offset = row_offset * ROW_SIZE;\n"
+"   return page + byte_offset;\n"
+" }\n"
+"```"
+msgstr ""
+
+#: ../../../_parts/part6.md:74
+msgid "Advancing the cursor in our current table structure is as simple as incrementing the row number. This will be a bit more complicated in a B-tree."
+msgstr ""
+
+#: ../../../_parts/part6.md:76
+msgid ""
+"```diff\n"
+"+void cursor_advance(Cursor* cursor) {\n"
+"+  cursor->row_num += 1;\n"
+"+  if (cursor->row_num >= cursor->table->num_rows) {\n"
+"+    cursor->end_of_table = true;\n"
+"+  }\n"
+"+}\n"
+"```"
+msgstr ""
+
+#: ../../../_parts/part6.md:85
+msgid "Finally we can change our \"virtual machine\" methods to use the cursor abstraction. When inserting a row, we open a cursor at the end of table, write to that cursor location, then close the cursor."
+msgstr ""
+
+#: ../../../_parts/part6.md:87
+msgid ""
+"```diff\n"
+"   Row* row_to_insert = &(statement->row_to_insert);\n"
+"+  Cursor* cursor = table_end(table);"
+msgstr ""
+
+#: ../../../_parts/part6.md:91 ../../../_parts/part6.md:189
+msgid ""
+"-  serialize_row(row_to_insert, row_slot(table, table->num_rows));\n"
+"+  serialize_row(row_to_insert, cursor_value(cursor));\n"
+"   table->num_rows += 1;"
+msgstr ""
+
+#: ../../../_parts/part6.md:95
+msgid ""
+"+  free(cursor);\n"
+"+\n"
+"   return EXECUTE_SUCCESS;\n"
+" }\n"
+" ```"
+msgstr ""
+
+#: ../../../_parts/part6.md:101
+msgid "When selecting all rows in the table, we open a cursor at the start of the table, print the row, then advance the cursor to the next row. Repeat until we've reached the end of the table."
+msgstr ""
+
+#: ../../../_parts/part6.md:103
+msgid ""
+"```diff\n"
+" ExecuteResult execute_select(Statement* statement, Table* table) {\n"
+"+  Cursor* cursor = table_start(table);\n"
+"+\n"
+"   Row row;\n"
+"-  for (uint32_t i = 0; i < table->num_rows; i++) {\n"
+"-    deserialize_row(row_slot(table, i), &row);\n"
+"+  while (!(cursor->end_of_table)) {\n"
+"+    deserialize_row(cursor_value(cursor), &row);\n"
+"     print_row(&row);\n"
+"+    cursor_advance(cursor);\n"
+"   }\n"
+"+\n"
+"+  free(cursor);\n"
+"+\n"
+"   return EXECUTE_SUCCESS;\n"
+" }\n"
+" ```"
+msgstr ""
+
+#: ../../../_parts/part6.md:122
+msgid "Alright, that's it! Like I said, this was a shorter refactor that should help us as we rewrite our table data structure into a B-Tree. `execute_select()` and `execute_insert()` can interact with the table entirely through the cursor without assuming anything about how the table is stored."
+msgstr ""
+
+#: ../../../_parts/part6.md:124
+msgid ""
+"Here's the complete diff to this part:\n"
+"```diff\n"
+"@@ -78,6 +78,13 @@ struct {\n"
+" } Table;"
+msgstr ""
+
+#: ../../../_parts/part6.md:129
+msgid ""
+"+typedef struct {\n"
+"+  Table* table;\n"
+"+  uint32_t row_num;\n"
+"+  bool end_of_table; // Indicates a position one past the last element\n"
+"+} Cursor;\n"
+"+\n"
+" void print_row(Row* row) {\n"
+"     printf(\"(%d, %s, %s)\n"
+"\", row->id, row->username, row->email);\n"
+" }\n"
+"@@ -126,12 +133,38 @@ void* get_page(Pager* pager, uint32_t page_num) {\n"
+"     return pager->pages[page_num];\n"
+" }"
+msgstr ""
+
+#: ../../../_parts/part6.md:142
+msgid ""
+"-void* row_slot(Table* table, uint32_t row_num) {\n"
+"-  uint32_t page_num = row_num / ROWS_PER_PAGE;\n"
+"-  void *page = get_page(table->pager, page_num);\n"
+"-  uint32_t row_offset = row_num % ROWS_PER_PAGE;\n"
+"-  uint32_t byte_offset = row_offset * ROW_SIZE;\n"
+"-  return page + byte_offset;\n"
+"+Cursor* table_start(Table* table) {\n"
+"+  Cursor* cursor = malloc(sizeof(Cursor));\n"
+"+  cursor->table = table;\n"
+"+  cursor->row_num = 0;\n"
+"+  cursor->end_of_table = (table->num_rows == 0);\n"
+"+\n"
+"+  return cursor;\n"
+"+}\n"
+"+\n"
+"+Cursor* table_end(Table* table) {\n"
+"+  Cursor* cursor = malloc(sizeof(Cursor));\n"
+"+  cursor->table = table;\n"
+"+  cursor->row_num = table->num_rows;\n"
+"+  cursor->end_of_table = true;\n"
+"+\n"
+"+  return cursor;\n"
+"+}\n"
+"+\n"
+"+void* cursor_value(Cursor* cursor) {\n"
+"+  uint32_t row_num = cursor->row_num;\n"
+"+  uint32_t page_num = row_num / ROWS_PER_PAGE;\n"
+"+  void *page = get_page(cursor->table->pager, page_num);\n"
+"+  uint32_t row_offset = row_num % ROWS_PER_PAGE;\n"
+"+  uint32_t byte_offset = row_offset * ROW_SIZE;\n"
+"+  return page + byte_offset;\n"
+"+}\n"
+"+\n"
+"+void cursor_advance(Cursor* cursor) {\n"
+"+  cursor->row_num += 1;\n"
+"+  if (cursor->row_num >= cursor->table->num_rows) {\n"
+"+    cursor->end_of_table = true;\n"
+"+  }\n"
+" }"
+msgstr ""
+
+#: ../../../_parts/part6.md:182
+msgid ""
+" Pager* pager_open(const char* filename) {\n"
+"@@ -327,19 +360,28 @@ ExecuteResult execute_insert(Statement* statement, Table* table) {\n"
+"     }"
+msgstr ""
+
+#: ../../../_parts/part6.md:186
+msgid ""
+"   Row* row_to_insert = &(statement->row_to_insert);\n"
+"+  Cursor* cursor = table_end(table);"
+msgstr ""
+
+#: ../../../_parts/part6.md:193
+msgid ""
+"+  free(cursor);\n"
+"+\n"
+"   return EXECUTE_SUCCESS;\n"
+" }"
+msgstr ""
+
+#: ../../../_parts/part6.md:198
+msgid ""
+" ExecuteResult execute_select(Statement* statement, Table* table) {\n"
+"+  Cursor* cursor = table_start(table);\n"
+"+\n"
+"   Row row;\n"
+"-  for (uint32_t i = 0; i < table->num_rows; i++) {\n"
+"-     deserialize_row(row_slot(table, i), &row);\n"
+"+  while (!(cursor->end_of_table)) {\n"
+"+     deserialize_row(cursor_value(cursor), &row);\n"
+"      print_row(&row);\n"
+"+     cursor_advance(cursor);\n"
+"   }\n"
+"+\n"
+"+  free(cursor);\n"
+"+\n"
+"   return EXECUTE_SUCCESS;\n"
+" }\n"
+"```"
+msgstr ""

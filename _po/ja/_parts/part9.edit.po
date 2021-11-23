@@ -1,0 +1,286 @@
+# Japanese translations for PACKAGE package.
+# Copyright (C) 2021 THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2021.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2021-11-23 11:24+0900\n"
+"PO-Revision-Date: 2021-11-23 11:24+0900\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: Japanese\n"
+"Language: ja\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=; plural=;\n"
+
+#: ../../../_parts/part9.md:1
+msgid ""
+"---\n"
+"title: Part 9 - Binary Search and Duplicate Keys\n"
+"date: 2017-10-01\n"
+"---"
+msgstr ""
+
+#: ../../../_parts/part9.md:6
+msgid "Last time we noted that we're still storing keys in unsorted order. We're going to fix that problem, plus detect and reject duplicate keys."
+msgstr ""
+
+#: ../../../_parts/part9.md:8
+msgid "Right now, our `execute_insert()` function always chooses to insert at the end of the table. Instead, we should search the table for the correct place to insert, then insert there. If the key already exists there, return an error."
+msgstr ""
+
+#: ../../../_parts/part9.md:10
+msgid ""
+"```diff\n"
+"ExecuteResult execute_insert(Statement* statement, Table* table) {\n"
+"   void* node = get_page(table->pager, table->root_page_num);\n"
+"-  if ((*leaf_node_num_cells(node) >= LEAF_NODE_MAX_CELLS)) {\n"
+"+  uint32_t num_cells = (*leaf_node_num_cells(node));\n"
+"+  if (num_cells >= LEAF_NODE_MAX_CELLS) {\n"
+"     return EXECUTE_TABLE_FULL;\n"
+"   }"
+msgstr ""
+
+#: ../../../_parts/part9.md:19
+msgid ""
+"   Row* row_to_insert = &(statement->row_to_insert);\n"
+"-  Cursor* cursor = table_end(table);\n"
+"+  uint32_t key_to_insert = row_to_insert->id;\n"
+"+  Cursor* cursor = table_find(table, key_to_insert);\n"
+"+\n"
+"+  if (cursor->cell_num < num_cells) {\n"
+"+    uint32_t key_at_index = *leaf_node_key(node, cursor->cell_num);\n"
+"+    if (key_at_index == key_to_insert) {\n"
+"+      return EXECUTE_DUPLICATE_KEY;\n"
+"+    }\n"
+"+  }"
+msgstr ""
+
+#: ../../../_parts/part9.md:31
+msgid ""
+"   leaf_node_insert(cursor, row_to_insert->id, row_to_insert);\n"
+"```"
+msgstr ""
+
+#: ../../../_parts/part9.md:34
+msgid "We don't need the `table_end()` function anymore."
+msgstr ""
+
+#: ../../../_parts/part9.md:36
+msgid ""
+"```diff\n"
+"-Cursor* table_end(Table* table) {\n"
+"-  Cursor* cursor = malloc(sizeof(Cursor));\n"
+"-  cursor->table = table;\n"
+"-  cursor->page_num = table->root_page_num;\n"
+"-\n"
+"-  void* root_node = get_page(table->pager, table->root_page_num);\n"
+"-  uint32_t num_cells = *leaf_node_num_cells(root_node);\n"
+"-  cursor->cell_num = num_cells;\n"
+"-  cursor->end_of_table = true;\n"
+"-\n"
+"-  return cursor;\n"
+"-}\n"
+"```"
+msgstr ""
+
+#: ../../../_parts/part9.md:51
+msgid "We'll replace it with a method that searches the tree for a given key."
+msgstr ""
+
+#: ../../../_parts/part9.md:53
+msgid ""
+"```diff\n"
+"+/*\n"
+"+Return the position of the given key.\n"
+"+If the key is not present, return the position\n"
+"+where it should be inserted\n"
+"+*/\n"
+"+Cursor* table_find(Table* table, uint32_t key) {\n"
+"+  uint32_t root_page_num = table->root_page_num;\n"
+"+  void* root_node = get_page(table->pager, root_page_num);\n"
+"+\n"
+"+  if (get_node_type(root_node) == NODE_LEAF) {\n"
+"+    return leaf_node_find(table, root_page_num, key);\n"
+"+  } else {\n"
+"+    printf(\"Need to implement searching an internal node\n"
+"\");\n"
+"+    exit(EXIT_FAILURE);\n"
+"+  }\n"
+"+}\n"
+"```"
+msgstr ""
+
+#: ../../../_parts/part9.md:72
+msgid "I'm stubbing out the branch for internal nodes because we haven't implemented internal nodes yet. We can search the leaf node with binary search."
+msgstr ""
+
+#: ../../../_parts/part9.md:74
+msgid ""
+"```diff\n"
+"+Cursor* leaf_node_find(Table* table, uint32_t page_num, uint32_t key) {\n"
+"+  void* node = get_page(table->pager, page_num);\n"
+"+  uint32_t num_cells = *leaf_node_num_cells(node);\n"
+"+\n"
+"+  Cursor* cursor = malloc(sizeof(Cursor));\n"
+"+  cursor->table = table;\n"
+"+  cursor->page_num = page_num;\n"
+"+\n"
+"+  // Binary search\n"
+"+  uint32_t min_index = 0;\n"
+"+  uint32_t one_past_max_index = num_cells;\n"
+"+  while (one_past_max_index != min_index) {\n"
+"+    uint32_t index = (min_index + one_past_max_index) / 2;\n"
+"+    uint32_t key_at_index = *leaf_node_key(node, index);\n"
+"+    if (key == key_at_index) {\n"
+"+      cursor->cell_num = index;\n"
+"+      return cursor;\n"
+"+    }\n"
+"+    if (key < key_at_index) {\n"
+"+      one_past_max_index = index;\n"
+"+    } else {\n"
+"+      min_index = index + 1;\n"
+"+    }\n"
+"+  }\n"
+"+\n"
+"+  cursor->cell_num = min_index;\n"
+"+  return cursor;\n"
+"+}\n"
+"```"
+msgstr ""
+
+#: ../../../_parts/part9.md:105
+msgid ""
+"This will either return\n"
+"- the position of the key,\n"
+"- the position of another key that we'll need to move if we want to insert the new key, or\n"
+"- the position one past the last key"
+msgstr ""
+
+#: ../../../_parts/part9.md:110
+msgid "Since we're now checking node type, we need functions to get and set that value in a node."
+msgstr ""
+
+#: ../../../_parts/part9.md:112
+msgid ""
+"```diff\n"
+"+NodeType get_node_type(void* node) {\n"
+"+  uint8_t value = *((uint8_t*)(node + NODE_TYPE_OFFSET));\n"
+"+  return (NodeType)value;\n"
+"+}\n"
+"+\n"
+"+void set_node_type(void* node, NodeType type) {\n"
+"+  uint8_t value = type;\n"
+"+  *((uint8_t*)(node + NODE_TYPE_OFFSET)) = value;\n"
+"+}\n"
+"```"
+msgstr ""
+
+#: ../../../_parts/part9.md:124
+msgid "We have to cast to `uint8_t` first to ensure it's serialized as a single byte."
+msgstr ""
+
+#: ../../../_parts/part9.md:126
+msgid "We also need to initialize node type."
+msgstr ""
+
+#: ../../../_parts/part9.md:128
+msgid ""
+"```diff\n"
+"-void initialize_leaf_node(void* node) { *leaf_node_num_cells(node) = 0; }\n"
+"+void initialize_leaf_node(void* node) {\n"
+"+  set_node_type(node, NODE_LEAF);\n"
+"+  *leaf_node_num_cells(node) = 0;\n"
+"+}\n"
+"```"
+msgstr ""
+
+#: ../../../_parts/part9.md:136
+msgid "Lastly, we need to make and handle a new error code."
+msgstr ""
+
+#: ../../../_parts/part9.md:138
+msgid ""
+"```diff\n"
+"-enum ExecuteResult_t { EXECUTE_SUCCESS, EXECUTE_TABLE_FULL };\n"
+"+enum ExecuteResult_t {\n"
+"+  EXECUTE_SUCCESS,\n"
+"+  EXECUTE_DUPLICATE_KEY,\n"
+"+  EXECUTE_TABLE_FULL\n"
+"+};\n"
+"```"
+msgstr ""
+
+#: ../../../_parts/part9.md:147
+msgid ""
+"```diff\n"
+"       case (EXECUTE_SUCCESS):\n"
+"         printf(\"Executed.\n"
+"\");\n"
+"         break;\n"
+"+      case (EXECUTE_DUPLICATE_KEY):\n"
+"+        printf(\"Error: Duplicate key.\n"
+"\");\n"
+"+        break;\n"
+"       case (EXECUTE_TABLE_FULL):\n"
+"         printf(\"Error: Table full.\n"
+"\");\n"
+"         break;\n"
+"```"
+msgstr ""
+
+#: ../../../_parts/part9.md:159
+msgid "With these changes, our test can change to check for sorted order:"
+msgstr ""
+
+#: ../../../_parts/part9.md:161
+msgid ""
+"```diff\n"
+"       \"db > Executed.\",\n"
+"       \"db > Tree:\",\n"
+"       \"leaf (size 3)\",\n"
+"-      \"  - 0 : 3\",\n"
+"-      \"  - 1 : 1\",\n"
+"-      \"  - 2 : 2\",\n"
+"+      \"  - 0 : 1\",\n"
+"+      \"  - 1 : 2\",\n"
+"+      \"  - 2 : 3\",\n"
+"       \"db > \"\n"
+"     ])\n"
+"   end\n"
+"```"
+msgstr ""
+
+#: ../../../_parts/part9.md:176
+msgid "And we can add a new test for duplicate keys:"
+msgstr ""
+
+#: ../../../_parts/part9.md:178
+msgid ""
+"```diff\n"
+"+  it 'prints an error message if there is a duplicate id' do\n"
+"+    script = [\n"
+"+      \"insert 1 user1 person1@example.com\",\n"
+"+      \"insert 1 user1 person1@example.com\",\n"
+"+      \"select\",\n"
+"+      \".exit\",\n"
+"+    ]\n"
+"+    result = run_script(script)\n"
+"+    expect(result).to match_array([\n"
+"+      \"db > Executed.\",\n"
+"+      \"db > Error: Duplicate key.\",\n"
+"+      \"db > (1, user1, person1@example.com)\",\n"
+"+      \"Executed.\",\n"
+"+      \"db > \",\n"
+"+    ])\n"
+"+  end\n"
+"```"
+msgstr ""
+
+#: ../../../_parts/part9.md:197
+msgid "That's it! Next up: implement splitting leaf nodes and creating internal nodes."
+msgstr ""

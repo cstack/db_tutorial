@@ -1,0 +1,28 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Language: ja\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=; plural=;\n"
+
+msgid "# Let's Build a Simple Database"
+msgstr "# シンプルなデータベースを作りましょう!"
+
+msgid ""
+"[View rendered tutorial](https://cstack.github.io/db_tutorial/) (with more det"
+"ails on what this is.)"
+msgstr ""
+"[ビルド済みのチュートリアル(英語版)](https://cstack.github.io/db_tutorial) (このプロジェクトについての詳細がこち"
+"らにあります)"
+
+msgid "## Notes to myself"
+msgstr "## ビルドするための備忘録"
+
+msgid ""
+"ローカルで実行する方法:\n"
+"```\n"
+"bundle exec jekyll serve\n"
+"```"
+msgstr ""

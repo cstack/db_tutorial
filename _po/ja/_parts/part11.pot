@@ -1,0 +1,172 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2021-11-23 11:24+0900\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: ../../../_parts/part11.md:1
+msgid "---\n"
+"title: Part 11 - Recursively Searching the B-Tree\n"
+"date: 2017-10-22\n"
+"---"
+msgstr ""
+
+#: ../../../_parts/part11.md:6
+msgid "Last time we ended with an error inserting our 15th row:"
+msgstr ""
+
+#: ../../../_parts/part11.md:8
+msgid "```\n"
+"db > insert 15 user15 person15@example.com\n"
+"Need to implement searching an internal node\n"
+"```"
+msgstr ""
+
+#: ../../../_parts/part11.md:13
+msgid "First, replace the code stub with a new function call."
+msgstr ""
+
+#: ../../../_parts/part11.md:15
+msgid "```diff\n"
+"   if (get_node_type(root_node) == NODE_LEAF) {\n"
+"     return leaf_node_find(table, root_page_num, key);\n"
+"   } else {\n"
+"-    printf(\"Need to implement searching an internal node\\n\");\n"
+"-    exit(EXIT_FAILURE);\n"
+"+    return internal_node_find(table, root_page_num, key);\n"
+"   }\n"
+" }\n"
+"```"
+msgstr ""
+
+#: ../../../_parts/part11.md:26
+msgid "This function will perform binary search to find the child that should contain the given key. Remember that the key to the right of each child pointer is the maximum key contained by that child."
+msgstr ""
+
+#: ../../../_parts/part11.md:28
+msgid "{% include image.html url=\"assets/images/btree6.png\" description=\"three-level btree\" %}"
+msgstr ""
+
+#: ../../../_parts/part11.md:30
+msgid "So our binary search compares the key to find and the key to the right of the child pointer:"
+msgstr ""
+
+#: ../../../_parts/part11.md:32
+msgid "```diff\n"
+"+Cursor* internal_node_find(Table* table, uint32_t page_num, uint32_t key) {\n"
+"+  void* node = get_page(table->pager, page_num);\n"
+"+  uint32_t num_keys = *internal_node_num_keys(node);\n"
+"+\n"
+"+  /* Binary search to find index of child to search */\n"
+"+  uint32_t min_index = 0;\n"
+"+  uint32_t max_index = num_keys; /* there is one more child than key */\n"
+"+\n"
+"+  while (min_index != max_index) {\n"
+"+    uint32_t index = (min_index + max_index) / 2;\n"
+"+    uint32_t key_to_right = *internal_node_key(node, index);\n"
+"+    if (key_to_right >= key) {\n"
+"+      max_index = index;\n"
+"+    } else {\n"
+"+      min_index = index + 1;\n"
+"+    }\n"
+"+  }\n"
+"```"
+msgstr ""
+
+#: ../../../_parts/part11.md:52
+msgid "Also remember that the children of an internal node can be either leaf nodes or more internal nodes. After we find the correct child, call the appropriate search function on it:"
+msgstr ""
+
+#: ../../../_parts/part11.md:54
+msgid "```diff\n"
+"+  uint32_t child_num = *internal_node_child(node, min_index);\n"
+"+  void* child = get_page(table->pager, child_num);\n"
+"+  switch (get_node_type(child)) {\n"
+"+    case NODE_LEAF:\n"
+"+      return leaf_node_find(table, child_num, key);\n"
+"+    case NODE_INTERNAL:\n"
+"+      return internal_node_find(table, child_num, key);\n"
+"+  }\n"
+"+}\n"
+"```"
+msgstr ""
+
+#: ../../../_parts/part11.md:66
+msgid "# Tests"
+msgstr ""
+
+#: ../../../_parts/part11.md:68
+msgid "Now inserting a key into a multi-node btree no longer results in an error. And we can update our test:"
+msgstr ""
+
+#: ../../../_parts/part11.md:70
+msgid "```diff\n"
+"       \"    - 12\",\n"
+"       \"    - 13\",\n"
+"       \"    - 14\",\n"
+"-      \"db > Need to implement searching an internal node\",\n"
+"+      \"db > Executed.\",\n"
+"+      \"db > \",\n"
+"     ])\n"
+"   end\n"
+"```"
+msgstr ""
+
+#: ../../../_parts/part11.md:81
+msgid "I also think it's time we revisit another test. The one that tries inserting 1400 rows. It still errors, but the error message is new. Right now, our tests don't handle it very well when the program crashes. If that happens, let's just use the output we've gotten so far:"
+msgstr ""
+
+#: ../../../_parts/part11.md:83
+msgid "```diff\n"
+"     raw_output = nil\n"
+"     IO.popen(\"./db test.db\", \"r+\") do |pipe|\n"
+"       commands.each do |command|\n"
+"-        pipe.puts command\n"
+"+        begin\n"
+"+          pipe.puts command\n"
+"+        rescue Errno::EPIPE\n"
+"+          break\n"
+"+        end\n"
+"       end"
+msgstr ""
+
+#: ../../../_parts/part11.md:95
+msgid "       pipe.close_write\n"
+"```"
+msgstr ""
+
+#: ../../../_parts/part11.md:98
+msgid "And that reveals that our 1400-row test outputs this error:"
+msgstr ""
+
+#: ../../../_parts/part11.md:100
+msgid "```diff\n"
+"     end\n"
+"     script << \".exit\"\n"
+"     result = run_script(script)\n"
+"-    expect(result[-2]).to eq('db > Error: Table full.')\n"
+"+    expect(result.last(2)).to match_array([\n"
+"+      \"db > Executed.\",\n"
+"+      \"db > Need to implement updating parent after split\",\n"
+"+    ])\n"
+"   end\n"
+"```"
+msgstr ""
+
+#: ../../../_parts/part11.md:112
+msgid "Looks like that's next on our to-do list!"
+msgstr ""
+

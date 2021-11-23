@@ -1,0 +1,57 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2021-11-23 11:24+0900\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: ../../index.md:1
+msgid "---\n"
+"title: How Does a Database Work?\n"
+"---"
+msgstr ""
+
+#: ../../index.md:5
+msgid "- What format is data saved in? (in memory and on disk)\n"
+"- When does it move from memory to disk?\n"
+"- Why can there only be one primary key per table?\n"
+"- How does rolling back a transaction work?\n"
+"- How are indexes formatted?\n"
+"- When and how does a full table scan happen?\n"
+"- What format is a prepared statement saved in?"
+msgstr ""
+
+#: ../../index.md:13
+msgid "In short, how does a database **work**?"
+msgstr ""
+
+#: ../../index.md:15
+msgid "I'm building a clone of [sqlite](https://www.sqlite.org/arch.html) from scratch in C in order to understand, and I'm going to document my process as I go."
+msgstr ""
+
+#: ../../index.md:17
+msgid "# Table of Contents\n"
+"{% for part in site.parts %}- [{{part.title}}]({{site.baseurl}}{{part.url}})\n"
+"{% endfor %}"
+msgstr ""
+
+#: ../../index.md:21
+msgid "> \"What I cannot create, I do not understand.\" -- [Richard Feynman](https://en.m.wikiquote.org/wiki/Richard_Feynman)"
+msgstr ""
+
+#: ../../index.md:23
+msgid "{% include image.html url=\"assets/images/arch2.gif\" description=\"sqlite architecture (https://www.sqlite.org/arch.html)\" %}"
+msgstr ""
+

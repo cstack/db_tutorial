@@ -192,7 +192,7 @@ memory release function and handle a few more error cases:
 +}
 +
 +void free_table(Table* table) {
-+    for (int i = 0; table->pages[i]; i++) {
++    for (uint32_t i = 0; table->pages[i]; i++) {
 +	free(table->pages[i]);
 +    }
 +    free(table);
@@ -351,7 +351,7 @@ We'll address those issues in the next part. For now, here's the complete diff f
 +}
 +
 +void free_table(Table* table) {
-+  for (int i = 0; table->pages[i]; i++) {
++  for (uint32_t i = 0; table->pages[i]; i++) {
 +     free(table->pages[i]);
 +  }
 +  free(table);

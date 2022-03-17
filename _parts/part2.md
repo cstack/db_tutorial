@@ -69,7 +69,7 @@ typedef enum {
 typedef enum { PREPARE_SUCCESS, PREPARE_UNRECOGNIZED_STATEMENT } PrepareResult;
 ```
 
-"Unrecognized statement"? That seems a bit like an exception. But [exceptions are bad](https://www.youtube.com/watch?v=EVhCUSgNbzo) (and C doesn't even support them), so I'm using enum result codes wherever practical. The C compiler will complain if my switch statement doesn't handle a member of the enum, so we can feel a little more confident we handle every result of a function. Expect more result codes to be added in the future.
+"Unrecognized statement"? That seems a bit like an exception. I prefer not to use exceptions (and C doesn't even support them), so I'm using enum result codes wherever practical. The C compiler will complain if my switch statement doesn't handle a member of the enum, so we can feel a little more confident we handle every result of a function. Expect more result codes to be added in the future.
 
 `do_meta_command` is just a wrapper for existing functionality that leaves room for more commands:
 

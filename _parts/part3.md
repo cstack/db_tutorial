@@ -178,6 +178,11 @@ Now we can make `execute_statement` read/write from our table structure:
  }
 ```
 
+Let's also define `ExecuteResult`:
+```diff
++typedef enum { EXECUTE_SUCCESS, EXECUTE_TABLE_FULL } ExecuteResult;
+```
+
 Lastly, we need to initialize the table, create the respective
 memory release function and handle a few more error cases:
 

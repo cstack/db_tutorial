@@ -74,9 +74,9 @@ int main(int argc, char* argv[]) {
     if (strcmp(input_buffer->buffer, ".exit") == 0) {
       close_input_buffer(input_buffer);
       exit(EXIT_SUCCESS);
-    } else {
-      printf("Unrecognized command '%s'.\n", input_buffer->buffer);
-    }
+    } else if (strlen(input_buffer->buffer)) {
+			printf("Unrecognized command '%s'.\n", input_buffer->buffer);
+		}
   }
 }
 ```
@@ -122,18 +122,19 @@ We tell `getline` to store the read line in `input_buffer->buffer` and the size 
 `buffer` starts as null, so `getline` allocates enough memory to hold the line of input and makes `buffer` point to it.
 
 ```c
-void read_input(InputBuffer* input_buffer) {
-  ssize_t bytes_read =
-      getline(&(input_buffer->buffer), &(input_buffer->buffer_length), stdin);
+void read_input(InputBuffer *input_buffer) {
+	ssize_t bytes_read =
+      getline(&(input_buffer->buffer), &(input_buffer->buffer_length), stdin) - 1;
+	input_buffer->buffer[bytes_read] = '\0';
 
-  if (bytes_read <= 0) {
-    printf("Error reading input\n");
-    exit(EXIT_FAILURE);
-  }
+	if (bytes_read < 0) {
+		printf("Error reading input\n");
+		exit(EXIT_FAILURE);
 
-  // Ignore trailing newline
-  input_buffer->input_length = bytes_read - 1;
-  input_buffer->buffer[bytes_read - 1] = 0;
+		// Ignore trailing newline
+		input_buffer->input_length = bytes_read - 1;
+		input_buffer->buffer[bytes_read - 1] = '\0';
+	}
 }
 ```
 
@@ -194,18 +195,19 @@ InputBuffer* new_input_buffer() {
 
 void print_prompt() { printf("db > "); }
 
-void read_input(InputBuffer* input_buffer) {
-  ssize_t bytes_read =
-      getline(&(input_buffer->buffer), &(input_buffer->buffer_length), stdin);
+void read_input(InputBuffer *input_buffer) {
+	ssize_t bytes_read =
+      getline(&(input_buffer->buffer), &(input_buffer->buffer_length), stdin) - 1;
+	input_buffer->buffer[bytes_read] = '\0';
 
-  if (bytes_read <= 0) {
-    printf("Error reading input\n");
-    exit(EXIT_FAILURE);
-  }
+	if (bytes_read < 0) {
+		printf("Error reading input\n");
+		exit(EXIT_FAILURE);
 
-  // Ignore trailing newline
-  input_buffer->input_length = bytes_read - 1;
-  input_buffer->buffer[bytes_read - 1] = 0;
+		// Ignore trailing newline
+		input_buffer->input_length = bytes_read - 1;
+		input_buffer->buffer[bytes_read - 1] = '\0';
+	}
 }
 
 void close_input_buffer(InputBuffer* input_buffer) {
@@ -222,9 +224,9 @@ int main(int argc, char* argv[]) {
     if (strcmp(input_buffer->buffer, ".exit") == 0) {
       close_input_buffer(input_buffer);
       exit(EXIT_SUCCESS);
-    } else {
-      printf("Unrecognized command '%s'.\n", input_buffer->buffer);
-    }
+    } else if (strlen(input_buffer->buffer)) {
+			printf("Unrecognized command '%s'.\n", input_buffer->buffer);
+		}
   }
 }
 ```

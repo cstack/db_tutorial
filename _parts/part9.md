@@ -136,12 +136,12 @@ We also need to initialize node type.
 Lastly, we need to make and handle a new error code.
 
 ```diff
--enum ExecuteResult_t { EXECUTE_SUCCESS, EXECUTE_TABLE_FULL };
-+enum ExecuteResult_t {
+-typedef enum { EXECUTE_SUCCESS, EXECUTE_TABLE_FULL } ExecuteResult;
++typedef enum {
 +  EXECUTE_SUCCESS,
 +  EXECUTE_DUPLICATE_KEY,
 +  EXECUTE_TABLE_FULL
-+};
++} ExecuteResult;
 ```
 
 ```diff
